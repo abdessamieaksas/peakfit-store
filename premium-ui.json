@@ -1,0 +1,27 @@
+{
+  "profile": "product-commerce-admin",
+  "sourceRoots": ["src"],
+  "locale": "fr-MA",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": [
+    "Table Selection",
+    "Select/Listbox",
+    "Date",
+    "Form",
+    "Scrollbar",
+    "Toast",
+    "CRUD"
+  ],
+  "ownership": {
+    "Select/Listbox": "authored",
+    "Date": "typed"
+  },
+  "requiredCommands": ["lint", "typecheck", "unit", "build", "premium"],
+  "commands": {
+    "lint": "pnpm lint",
+    "typecheck": "pnpm typecheck",
+    "unit": "pnpm test:unit",
+    "build": "pnpm build",
+    "premium": "pnpm verify:premium"
+  }
+}
