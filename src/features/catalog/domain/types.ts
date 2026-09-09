@@ -4,6 +4,27 @@ export type CatalogCategory = {
   shortLabel: string;
 };
 
+export type CatalogOptionValue = {
+  code: string;
+  label: string;
+  swatch?: string;
+};
+
+export type CatalogOption = {
+  code: string;
+  name: string;
+  values: CatalogOptionValue[];
+};
+
+export type CatalogVariant = {
+  id: string;
+  sku: string;
+  title: string;
+  price: number;
+  availableQuantity: number;
+  optionValues: Record<string, string>;
+};
+
 export type CatalogProduct = {
   id: string;
   slug: string;
@@ -20,5 +41,7 @@ export type CatalogProduct = {
   alt: string;
   colors: string[];
   sizes: string[];
+  options: CatalogOption[];
+  variants: CatalogVariant[];
   benefits: string[];
 };

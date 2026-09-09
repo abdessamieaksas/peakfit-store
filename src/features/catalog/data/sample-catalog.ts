@@ -1,7 +1,65 @@
 import type {
   CatalogCategory,
+  CatalogOption,
   CatalogProduct,
+  CatalogVariant,
 } from "@/features/catalog/domain/types";
+
+const colorCodes: Record<string, { code: string; swatch: string }> = {
+  Noir: { code: "blk", swatch: "#09090b" },
+  Blanc: { code: "wht", swatch: "#f7f6f8" },
+  Lavande: { code: "lav", swatch: "#b8a2ff" },
+};
+
+function optionCode(value: string) {
+  return value.toLocaleLowerCase("fr-MA").replace(/[^a-z0-9]+/g, "-");
+}
+
+function createOptions(sizes: string[], colors: string[]): CatalogOption[] {
+  return [
+    {
+      code: "size",
+      name: "Taille",
+      values: sizes.map((label) => ({ code: optionCode(label), label })),
+    },
+    {
+      code: "color",
+      name: "Couleur",
+      values: colors.map((label) => ({
+        code: colorCodes[label]?.code ?? optionCode(label),
+        label,
+        swatch: colorCodes[label]?.swatch,
+      })),
+    },
+  ];
+}
+
+function createVariants(
+  productIndex: number,
+  skuRoot: string,
+  price: number,
+  sizes: string[],
+  colors: string[],
+): CatalogVariant[] {
+  let variantIndex = 0;
+
+  return colors.flatMap((color) =>
+    sizes.map((size) => {
+      variantIndex += 1;
+      const colorCode = colorCodes[color]?.code ?? optionCode(color);
+      const sizeCode = optionCode(size);
+
+      return {
+        id: `50000000-0000-4000-800${productIndex}-${String(variantIndex).padStart(12, "0")}`,
+        sku: `PF-${skuRoot}-${colorCode.toUpperCase()}-${sizeCode.toUpperCase()}`,
+        title: `${color} / ${size}`,
+        price,
+        availableQuantity: 20,
+        optionValues: { size: sizeCode, color: colorCode },
+      };
+    }),
+  );
+}
 
 export const catalogCategories: CatalogCategory[] = [
   { slug: "tous", label: "Tous les produits", shortLabel: "Tous" },
@@ -9,6 +67,13 @@ export const catalogCategories: CatalogCategory[] = [
   { slug: "graphique", label: "T-shirts graphiques", shortLabel: "Graphique" },
   { slug: "running", label: "Tenues running", shortLabel: "Running" },
 ];
+
+const coreSizes = ["S", "M", "L", "XL"];
+const coreColors = ["Noir", "Lavande"];
+const kineticSizes = ["S", "M", "L", "XL", "XXL"];
+const kineticColors = ["Noir", "Blanc", "Lavande"];
+const velocitySizes = ["S", "M", "L", "XL"];
+const velocityColors = ["Noir", "Lavande"];
 
 export const sampleProducts: CatalogProduct[] = [
   {
@@ -25,8 +90,10 @@ export const sampleProducts: CatalogProduct[] = [
     imageWidth: 1122,
     imageHeight: 1402,
     alt: "Athlète portant le t-shirt noir Compression Core Peakfit",
-    colors: ["Noir", "Lavande"],
-    sizes: ["S", "M", "L", "XL"],
+    colors: coreColors,
+    sizes: coreSizes,
+    options: createOptions(coreSizes, coreColors),
+    variants: createVariants(1, "CORE", 25900, coreSizes, coreColors),
     benefits: [
       "Tissu extensible quatre directions",
       "Zones respirantes à séchage rapide",
@@ -47,8 +114,10 @@ export const sampleProducts: CatalogProduct[] = [
     imageWidth: 1122,
     imageHeight: 1402,
     alt: "Athlète portant le t-shirt noir graphique Kinetic Peakfit",
-    colors: ["Noir", "Blanc", "Lavande"],
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    colors: kineticColors,
+    sizes: kineticSizes,
+    options: createOptions(kineticSizes, kineticColors),
+    variants: createVariants(2, "KIN", 22900, kineticSizes, kineticColors),
     benefits: [
       "Jersey doux et respirant",
       "Coupe athlétique facile à porter",
@@ -70,8 +139,16 @@ export const sampleProducts: CatalogProduct[] = [
     imageWidth: 1122,
     imageHeight: 1402,
     alt: "Athlète portant l'ensemble running noir Velocity Peakfit",
-    colors: ["Noir", "Lavande"],
-    sizes: ["S", "M", "L", "XL"],
+    colors: velocityColors,
+    sizes: velocitySizes,
+    options: createOptions(velocitySizes, velocityColors),
+    variants: createVariants(
+      3,
+      "VEL",
+      49900,
+      velocitySizes,
+      velocityColors,
+    ),
     benefits: [
       "Ensemble deux pièces coordonné",
       "Matière légère qui évacue l'humidité",

@@ -45,7 +45,7 @@ export function CartView() {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <ul className="divide-y divide-border border-y border-border">
         {lines.map((line) => (
-          <li key={`${line.productId}-${line.size}-${line.color}`} className="grid grid-cols-[6rem_1fr] gap-4 py-5 sm:grid-cols-[8rem_1fr]">
+          <li key={line.variantId} className="grid grid-cols-[6rem_1fr] gap-4 py-5 sm:grid-cols-[8rem_1fr]">
             <Link
               href={`/produits/${line.slug}`}
               className="relative aspect-[4/5] overflow-hidden rounded-sm bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
@@ -62,7 +62,9 @@ export function CartView() {
                     {line.name}
                   </Link>
                   <p className="mt-1 text-sm text-muted">
-                    Taille {line.size} · {line.color}
+                    {line.options
+                      .map((option) => `${option.name} ${option.label}`)
+                      .join(" · ")}
                   </p>
                 </div>
                 <p className="shrink-0 font-extrabold tabular-nums">
@@ -77,9 +79,7 @@ export function CartView() {
                     aria-label={`Réduire la quantité de ${line.name}`}
                     onClick={() =>
                       setQuantity(
-                        line.productId,
-                        line.size,
-                        line.color,
+                        line.variantId,
                         line.quantity - 1,
                       )
                     }
@@ -91,16 +91,15 @@ export function CartView() {
                   </span>
                   <button
                     type="button"
-                    className="inline-flex size-11 items-center justify-center rounded-r-md hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    className="inline-flex size-11 items-center justify-center rounded-r-md hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={`Augmenter la quantité de ${line.name}`}
                     onClick={() =>
                       setQuantity(
-                        line.productId,
-                        line.size,
-                        line.color,
+                        line.variantId,
                         line.quantity + 1,
                       )
                     }
+                    disabled={line.quantity >= 10}
                   >
                     <Plus aria-hidden="true" className="size-4" />
                   </button>
@@ -108,7 +107,7 @@ export function CartView() {
                 <button
                   type="button"
                   className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-muted hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                  onClick={() => removeLine(line.productId, line.size, line.color)}
+                  onClick={() => removeLine(line.variantId)}
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
                   Retirer

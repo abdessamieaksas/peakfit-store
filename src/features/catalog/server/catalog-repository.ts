@@ -18,6 +18,8 @@ import {
   productOptions,
   productOptionValues,
   products,
+  productVariants,
+  variantOptionValues,
 } from "@/lib/db/schema";
 
 function badgeFromTags(tags: string[]): CatalogProduct["badge"] {
@@ -86,7 +88,10 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
     .select({
       productId: productOptions.productId,
       optionCode: productOptions.code,
+      optionName: productOptions.nameFr,
+      valueCode: productOptionValues.code,
       label: productOptionValues.labelFr,
+      swatch: productOptionValues.swatch,
     })
     .from(productOptions)
     .innerJoin(
@@ -96,6 +101,42 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
     .where(inArray(productOptions.productId, rows.map((row) => row.id)))
     .orderBy(asc(productOptions.position), asc(productOptionValues.position));
 
+  const variantRows = await db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sku: productVariants.sku,
+      title: productVariants.title,
+      priceOverride: productVariants.priceOverride,
+      stockQuantity: productVariants.stockQuantity,
+      reservedQuantity: productVariants.reservedQuantity,
+      optionCode: productOptions.code,
+      valueCode: productOptionValues.code,
+    })
+    .from(productVariants)
+    .innerJoin(
+      variantOptionValues,
+      eq(variantOptionValues.variantId, productVariants.id),
+    )
+    .innerJoin(
+      productOptionValues,
+      eq(productOptionValues.id, variantOptionValues.optionValueId),
+    )
+    .innerJoin(
+      productOptions,
+      and(
+        eq(productOptions.id, productOptionValues.optionId),
+        eq(productOptions.productId, productVariants.productId),
+      ),
+    )
+    .where(
+      and(
+        inArray(productVariants.productId, rows.map((row) => row.id)),
+        eq(productVariants.isActive, true),
+      ),
+    )
+    .orderBy(asc(productVariants.id), asc(productOptions.position));
+
   return rows.map((row) => {
     if (!row.image || !row.imageWidth || !row.imageHeight || !row.alt) {
       throw new Error(`Active product ${row.slug} is missing a primary image.`);
@@ -104,6 +145,64 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
     const productOptionsForRow = optionRows.filter(
       (option) => option.productId === row.id,
     );
+    const productVariantsForRow = variantRows.filter(
+      (variant) => variant.productId === row.id,
+    );
+    const groupedVariants = new Map<
+      string,
+      {
+        id: string;
+        sku: string;
+        title: string;
+        price: number;
+        availableQuantity: number;
+        optionValues: Record<string, string>;
+      }
+    >();
+
+    for (const variant of productVariantsForRow) {
+      const current = groupedVariants.get(variant.id) ?? {
+        id: variant.id,
+        sku: variant.sku,
+        title: variant.title,
+        price: variant.priceOverride ?? row.price,
+        availableQuantity: Math.max(
+          variant.stockQuantity - variant.reservedQuantity,
+          0,
+        ),
+        optionValues: {},
+      };
+
+      current.optionValues[variant.optionCode] = variant.valueCode;
+      groupedVariants.set(variant.id, current);
+    }
+
+    const groupedOptions = new Map<
+      string,
+      {
+        code: string;
+        name: string;
+        values: Array<{ code: string; label: string; swatch?: string }>;
+      }
+    >();
+
+    for (const option of productOptionsForRow) {
+      const current = groupedOptions.get(option.optionCode) ?? {
+        code: option.optionCode,
+        name: option.optionName,
+        values: [],
+      };
+
+      if (!current.values.some((value) => value.code === option.valueCode)) {
+        current.values.push({
+          code: option.valueCode,
+          label: option.label,
+          swatch: option.swatch ?? undefined,
+        });
+      }
+
+      groupedOptions.set(option.optionCode, current);
+    }
 
     return {
       id: row.id,
@@ -126,6 +225,8 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
       sizes: productOptionsForRow
         .filter((option) => option.optionCode === "size")
         .map((option) => option.label),
+      options: [...groupedOptions.values()],
+      variants: [...groupedVariants.values()],
       benefits: row.benefits.map((benefit) => benefit.fr),
     } satisfies CatalogProduct;
   });

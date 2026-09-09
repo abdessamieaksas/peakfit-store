@@ -10,16 +10,24 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "peakfit-cart-v1";
+const STORAGE_KEY = "peakfit-cart-v2";
+
+export type CartOption = {
+  code: string;
+  name: string;
+  value: string;
+  label: string;
+};
 
 export type CartLine = {
+  variantId: string;
   productId: string;
   slug: string;
   name: string;
   image: string;
   price: number;
-  size: string;
-  color: string;
+  variantTitle: string;
+  options: CartOption[];
   quantity: number;
 };
 
@@ -28,8 +36,8 @@ type CartContextValue = {
   count: number;
   total: number;
   addLine: (line: Omit<CartLine, "quantity">) => void;
-  removeLine: (productId: string, size: string, color: string) => void;
-  setQuantity: (productId: string, size: string, color: string, quantity: number) => void;
+  removeLine: (variantId: string) => void;
+  setQuantity: (variantId: string, quantity: number) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -39,12 +47,41 @@ function readStoredCart(): CartLine[] {
     const value = window.localStorage.getItem(STORAGE_KEY);
     if (!value) return [];
 
-    return (JSON.parse(value) as Array<CartLine & { color?: string }>).map(
-      (line) => ({ ...line, color: line.color ?? "Noir" }),
-    );
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(isCartLine);
   } catch {
     return [];
   }
+}
+
+function isCartLine(value: unknown): value is CartLine {
+  if (!value || typeof value !== "object") return false;
+
+  const line = value as Partial<CartLine>;
+  return (
+    typeof line.variantId === "string" &&
+    typeof line.productId === "string" &&
+    typeof line.slug === "string" &&
+    typeof line.name === "string" &&
+    typeof line.image === "string" &&
+    Number.isInteger(line.price) &&
+    Number(line.price) >= 0 &&
+    typeof line.variantTitle === "string" &&
+    Array.isArray(line.options) &&
+    line.options.every(
+      (option) =>
+        option &&
+        typeof option.code === "string" &&
+        typeof option.name === "string" &&
+        typeof option.value === "string" &&
+        typeof option.label === "string",
+    ) &&
+    Number.isInteger(line.quantity) &&
+    Number(line.quantity) >= 1 &&
+    Number(line.quantity) <= 10
+  );
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -73,48 +110,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addLine = useCallback((line: Omit<CartLine, "quantity">) => {
     setLines((current) => {
       const existing = current.find(
-        (item) =>
-          item.productId === line.productId &&
-          item.size === line.size &&
-          item.color === line.color,
+        (item) => item.variantId === line.variantId,
       );
 
       if (!existing) return [...current, { ...line, quantity: 1 }];
 
       return current.map((item) =>
-        item.productId === line.productId &&
-        item.size === line.size &&
-        item.color === line.color
-          ? { ...item, quantity: item.quantity + 1 }
+        item.variantId === line.variantId
+          ? { ...item, quantity: Math.min(item.quantity + 1, 10) }
           : item,
       );
     });
   }, []);
 
-  const removeLine = useCallback((productId: string, size: string, color: string) => {
+  const removeLine = useCallback((variantId: string) => {
     setLines((current) =>
-      current.filter(
-        (item) =>
-          item.productId !== productId ||
-          item.size !== size ||
-          item.color !== color,
-      ),
+      current.filter((item) => item.variantId !== variantId),
     );
   }, []);
 
   const setQuantity = useCallback(
-    (productId: string, size: string, color: string, quantity: number) => {
+    (variantId: string, quantity: number) => {
       if (quantity <= 0) {
-        removeLine(productId, size, color);
+        removeLine(variantId);
         return;
       }
 
       setLines((current) =>
         current.map((item) =>
-          item.productId === productId &&
-          item.size === size &&
-          item.color === color
-            ? { ...item, quantity }
+          item.variantId === variantId
+            ? { ...item, quantity: Math.min(quantity, 10) }
             : item,
         ),
       );

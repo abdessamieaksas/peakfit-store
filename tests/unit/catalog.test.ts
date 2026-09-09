@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import {
   catalogCategories,
@@ -23,5 +24,29 @@ describe("sample catalog adapter", () => {
 
   it("stores money in integer centimes", () => {
     expect(sampleProducts.every((product) => Number.isInteger(product.price))).toBe(true);
+  });
+
+  it("exposes each purchasable option combination as a stable variant", () => {
+    for (const product of sampleProducts) {
+      const expectedVariantCount = product.options.reduce(
+        (count, option) => count * option.values.length,
+        1,
+      );
+
+      expect(product.variants).toHaveLength(expectedVariantCount);
+      expect(new Set(product.variants.map((variant) => variant.id)).size).toBe(
+        product.variants.length,
+      );
+      expect(
+        product.variants.every(
+          (variant) =>
+            z.uuid().safeParse(variant.id).success &&
+            variant.availableQuantity > 0 &&
+            product.options.every(
+              (option) => variant.optionValues[option.code] !== undefined,
+            ),
+        ),
+      ).toBe(true);
+    }
   });
 });

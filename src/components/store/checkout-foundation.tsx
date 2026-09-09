@@ -47,7 +47,7 @@ export function CheckoutFoundation() {
     const items = lines
       .map(
         (line) =>
-          `• ${line.name} — ${line.color}, taille ${line.size} × ${line.quantity} (${formatMad(line.price * line.quantity)})`,
+          `• ${line.name} — ${line.variantTitle} × ${line.quantity} (${formatMad(line.price * line.quantity)})`,
       )
       .join("\n");
     const message = [
