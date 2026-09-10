@@ -135,6 +135,27 @@ BEGIN
 		UPDATE public.inventory_reservations
 		SET status = 'RELEASED', closed_at = now(), close_reason = 'order_cancelled_after_confirmation', updated_at = now()
 		WHERE order_id = order_id_value AND status = 'COMMITTED';
+	ELSIF next_status_value IN ('REFUSED', 'RETURNED') AND order_record.status IN ('SHIPPED', 'DELIVERED') THEN
+		PERFORM variant.id
+		FROM public.product_variants AS variant
+		JOIN public.inventory_reservations AS reservation ON reservation.variant_id = variant.id
+		WHERE reservation.order_id = order_id_value AND reservation.status = 'COMMITTED'
+		ORDER BY variant.id
+		FOR UPDATE OF variant;
+
+		UPDATE public.product_variants AS variant
+		SET stock_quantity = variant.stock_quantity + committed.quantity, updated_at = now()
+		FROM (
+			SELECT variant_id, sum(quantity)::integer AS quantity
+			FROM public.inventory_reservations
+			WHERE order_id = order_id_value AND status = 'COMMITTED'
+			GROUP BY variant_id
+		) AS committed
+		WHERE variant.id = committed.variant_id;
+
+		UPDATE public.inventory_reservations
+		SET status = 'RELEASED', closed_at = now(), close_reason = 'order_returned_to_stock', updated_at = now()
+		WHERE order_id = order_id_value AND status = 'COMMITTED';
 	END IF;
 
 	UPDATE public.orders

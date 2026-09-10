@@ -26,6 +26,7 @@ describe("order transition migration", () => {
   it("releases reserved or committed stock when an order is cancelled", () => {
     expect(migration).toContain("status = 'RELEASED'");
     expect(migration).toContain("stock_quantity = variant.stock_quantity + committed.quantity");
+    expect(migration).toContain("order_returned_to_stock");
   });
 
   it("queues a status notification and writes immutable history", () => {
