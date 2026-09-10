@@ -16,7 +16,9 @@ export default function CheckoutPage() {
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-accent-strong">Paiement à la livraison</p>
           <h1 className="display-title mt-3 text-[clamp(4rem,9vw,8rem)]">Finaliser</h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-muted">
-            Laisse les informations nécessaires à la livraison. L&apos;équipe Peakfit te contactera pour confirmer la commande.
+            Laisse les informations nécessaires à la livraison. Ta commande sera
+            enregistrée immédiatement, puis l&apos;équipe Peakfit te contactera pour
+            la confirmer.
           </p>
           <div className="mt-9 max-w-xl">
             <CheckoutFoundation />
@@ -27,7 +29,8 @@ export default function CheckoutPage() {
           <h2 className="mt-4 font-display text-3xl font-extrabold">Commande protégée</h2>
           <ul className="mt-5 grid gap-3 text-sm text-muted">
             <li>Tu ne paies rien maintenant.</li>
-            <li>Nous confirmons la taille et la disponibilité avec toi.</li>
+            <li>La commande apparaît directement dans notre espace de suivi.</li>
+            <li>Nous confirmons ensuite la taille et la disponibilité avec toi.</li>
             <li>Le règlement se fait à la réception de ton colis.</li>
           </ul>
         </aside>

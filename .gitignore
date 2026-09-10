@@ -10,6 +10,8 @@ out/
 # Build and test output
 coverage/
 dist/
+test-results/
+playwright-report/
 *.tsbuildinfo
 
 # Environment files
@@ -38,4 +40,3 @@ Thumbs.db
 
 # Product Design and local QA artifacts
 design-qa.local.md
-
