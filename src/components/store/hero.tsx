@@ -15,7 +15,7 @@ export function Hero() {
   return (
     <section className="relative isolate min-h-[26rem] overflow-hidden border-b border-border sm:min-h-[42rem] lg:min-h-[46rem]">
       <Image
-        src="/images/hero/peakfit-day.png"
+        src="/images/hero/peakfit-day.webp"
         alt="Athlète Peakfit en tenue noire dans un studio lumineux"
         fill
         priority
@@ -23,7 +23,7 @@ export function Hero() {
         className="hero-image-day object-cover object-[64%_center] transition-opacity duration-300"
       />
       <Image
-        src="/images/hero/peakfit-night.png"
+        src="/images/hero/peakfit-night.webp"
         alt="Athlète Peakfit courant en tenue noire dans un tunnel de nuit"
         fill
         priority
