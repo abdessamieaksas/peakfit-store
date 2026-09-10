@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { releaseExpiredReservations } from "@/features/inventory/server/reservation-repository";
 import { dispatchNotifications } from "@/features/notifications/server/dispatcher";
 import { ensureAdminOrderNotification } from "@/features/notifications/server/notification-repository";
 import { getServerEnv } from "@/lib/config/env";
@@ -25,6 +26,12 @@ export async function GET(request: Request) {
   }
 
   await ensureAdminOrderNotification();
-  const summary = await dispatchNotifications({ limit: 25 });
-  return NextResponse.json({ ok: true, summary });
+  const [releasedReservations, notifications] = await Promise.all([
+    releaseExpiredReservations(500),
+    dispatchNotifications({ limit: 25 }),
+  ]);
+  return NextResponse.json({
+    ok: true,
+    summary: { releasedReservations, notifications },
+  });
 }
