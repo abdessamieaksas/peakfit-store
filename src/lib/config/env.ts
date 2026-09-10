@@ -20,6 +20,18 @@ const serverEnvSchema = z.object({
     .min(15)
     .max(10_080)
     .default(1_440),
+  ADMIN_ORDER_EMAIL: z.email().optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(3).max(254).optional(),
+  WHATSAPP_GRAPH_API_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .default("v26.0"),
+  WHATSAPP_BUSINESS_PHONE_NUMBER_ID: z.string().min(1).optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
+  WHATSAPP_ORDER_TEMPLATE_NAME: z.string().min(1).optional(),
+  WHATSAPP_ORDER_TEMPLATE_LANGUAGE: z.string().min(2).default("fr_MA"),
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 export const publicEnv = publicEnvSchema.parse({
