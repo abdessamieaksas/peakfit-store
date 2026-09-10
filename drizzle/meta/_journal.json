@@ -29,6 +29,13 @@
       "when": 1789048800000,
       "tag": "0003_peakfit_reservation_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789135200000,
+      "tag": "0004_peakfit_order_transitions",
+      "breakpoints": true
     }
   ]
 }

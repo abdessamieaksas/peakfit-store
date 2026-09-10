@@ -21,6 +21,7 @@ const serverEnvSchema = z.object({
     .max(10_080)
     .default(1_440),
   ADMIN_ORDER_EMAIL: z.email().optional(),
+  ADMIN_EMAILS: z.string().optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(3).max(254).optional(),
   WHATSAPP_GRAPH_API_VERSION: z
