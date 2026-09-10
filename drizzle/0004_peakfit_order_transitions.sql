@@ -60,6 +60,21 @@ BEGIN
 			RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'RESERVATION_EXPIRED';
 		END IF;
 
+		IF EXISTS (
+			SELECT 1
+			FROM (
+				SELECT variant_id, sum(quantity)::integer AS quantity
+				FROM public.inventory_reservations
+				WHERE order_id = order_id_value AND status = 'ACTIVE'
+				GROUP BY variant_id
+			) AS reserved
+			JOIN public.product_variants AS variant ON variant.id = reserved.variant_id
+			WHERE variant.stock_quantity < reserved.quantity
+				OR variant.reserved_quantity < reserved.quantity
+		) THEN
+			RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'RESERVATION_EXPIRED';
+		END IF;
+
 		UPDATE public.product_variants AS variant
 		SET
 			stock_quantity = variant.stock_quantity - reserved.quantity,
@@ -74,17 +89,6 @@ BEGIN
 		WHERE variant.id = reserved.variant_id
 			AND variant.stock_quantity >= reserved.quantity
 			AND variant.reserved_quantity >= reserved.quantity;
-
-		IF EXISTS (
-			SELECT 1
-			FROM public.inventory_reservations AS reservation
-			JOIN public.product_variants AS variant ON variant.id = reservation.variant_id
-			WHERE reservation.order_id = order_id_value
-				AND reservation.status = 'ACTIVE'
-				AND (variant.stock_quantity < reservation.quantity OR variant.reserved_quantity < reservation.quantity)
-		) THEN
-			RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'RESERVATION_EXPIRED';
-		END IF;
 
 		UPDATE public.inventory_reservations
 		SET status = 'COMMITTED', closed_at = now(), close_reason = 'order_confirmed', updated_at = now()

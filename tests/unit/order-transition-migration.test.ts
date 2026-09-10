@@ -18,6 +18,9 @@ describe("order transition migration", () => {
     expect(migration).toContain("next_status_value = 'CONFIRMED'");
     expect(migration).toContain("stock_quantity = variant.stock_quantity - reserved.quantity");
     expect(migration).toContain("status = 'COMMITTED'");
+    expect(migration.indexOf("IF EXISTS (")).toBeLessThan(
+      migration.indexOf("stock_quantity = variant.stock_quantity - reserved.quantity"),
+    );
   });
 
   it("releases reserved or committed stock when an order is cancelled", () => {
