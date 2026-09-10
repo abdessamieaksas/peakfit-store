@@ -23,6 +23,7 @@ const validOrder = {
       quantity: 2,
     },
   ],
+  contactConsent: true,
 };
 
 describe("COD checkout contract", () => {

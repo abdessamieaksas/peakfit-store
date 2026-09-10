@@ -88,6 +88,9 @@ export const createCodOrderInputSchema = z
       })
       .strict(),
     items: z.array(checkoutLineInputSchema).min(1).max(20),
+    contactConsent: z.literal(true, {
+      error: "Accepte d’être contacté au sujet de cette commande.",
+    }),
     attribution: z
       .object({
         firstTouch: attributionTouchSchema.optional(),

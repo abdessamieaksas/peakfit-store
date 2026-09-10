@@ -14,7 +14,12 @@ const serverEnvSchema = z.object({
   STORE_DATA_SOURCE: z.enum(["sample", "neon"]).default("sample"),
   NEON_AUTH_BASE_URL: z.url().optional(),
   NEON_AUTH_COOKIE_SECRET: z.string().min(32).optional(),
-  ORDER_RESERVATION_MINUTES: z.coerce.number().int().positive().default(1440),
+  ORDER_RESERVATION_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(15)
+    .max(10_080)
+    .default(1_440),
 });
 
 export const publicEnv = publicEnvSchema.parse({

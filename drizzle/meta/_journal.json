@@ -15,6 +15,13 @@
       "when": 1788900000000,
       "tag": "0001_peakfit_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788962336688,
+      "tag": "0002_peakfit_cod_order",
+      "breakpoints": true
     }
   ]
 }
