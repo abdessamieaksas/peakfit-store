@@ -41,5 +41,7 @@ Thumbs.db
 # Product Design and local QA artifacts
 design-qa.local.md
 
-# Vercel project metadata
+# Vercel project metadata and local environment files
 .vercel
+.env*
+!.env.example
