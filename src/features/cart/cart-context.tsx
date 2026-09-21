@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
+import type { ShippingQuote } from "@/features/shipping/domain/types";
+
 const STORAGE_KEY = "peakfit-cart-v2";
 
 export type CartOption = {
@@ -35,9 +37,11 @@ type CartContextValue = {
   lines: CartLine[];
   count: number;
   total: number;
+  shippingQuote: ShippingQuote | null;
   addLine: (line: Omit<CartLine, "quantity">) => void;
   removeLine: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
+  setShippingQuote: (quote: ShippingQuote | null) => void;
   clearCart: () => void;
 };
 
@@ -88,6 +92,10 @@ function isCartLine(value: unknown): value is CartLine {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [shippingEstimate, setShippingEstimate] = useState<{
+    subtotal: number;
+    quote: ShippingQuote;
+  } | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -150,19 +158,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     setLines([]);
+    setShippingEstimate(null);
   }, []);
+
+  const total = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
+  const shippingQuote =
+    shippingEstimate?.subtotal === total ? shippingEstimate.quote : null;
+  const setShippingQuote = useCallback(
+    (quote: ShippingQuote | null) => {
+      setShippingEstimate(quote ? { subtotal: total, quote } : null);
+    },
+    [total],
+  );
 
   const value = useMemo(
     () => ({
       lines,
       count: lines.reduce((sum, line) => sum + line.quantity, 0),
-      total: lines.reduce((sum, line) => sum + line.price * line.quantity, 0),
+      total,
+      shippingQuote,
       addLine,
       removeLine,
       setQuantity,
+      setShippingQuote,
       clearCart,
     }),
-    [addLine, clearCart, lines, removeLine, setQuantity],
+    [
+      addLine,
+      clearCart,
+      lines,
+      removeLine,
+      setQuantity,
+      setShippingQuote,
+      shippingQuote,
+      total,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

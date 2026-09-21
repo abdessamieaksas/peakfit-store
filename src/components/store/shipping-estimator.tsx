@@ -9,16 +9,16 @@ import { formatMad } from "@/lib/money";
 
 type ShippingEstimatorProps = {
   subtotal: number;
+  quote: ShippingQuote | null;
   onQuoteChange: (quote: ShippingQuote | null) => void;
 };
 
 export function ShippingEstimator({
   subtotal,
+  quote,
   onQuoteChange,
 }: ShippingEstimatorProps) {
-  const [city, setCity] = useState("");
-  const [quote, setQuote] = useState<ShippingQuote | null>(null);
-  const [quotedSubtotal, setQuotedSubtotal] = useState<number | null>(null);
+  const [city, setCity] = useState(() => quote?.city ?? "");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -27,8 +27,6 @@ export function ShippingEstimator({
     setError("");
 
     if (city.trim().length < 2) {
-      setQuote(null);
-      setQuotedSubtotal(null);
       onQuoteChange(null);
       setError("Saisis une ville valide.");
       return;
@@ -50,12 +48,8 @@ export function ShippingEstimator({
         throw new Error(payload.error ?? "Tarif indisponible.");
       }
 
-      setQuote(payload.quote);
-      setQuotedSubtotal(subtotal);
       onQuoteChange(payload.quote);
     } catch (caught) {
-      setQuote(null);
-      setQuotedSubtotal(null);
       onQuoteChange(null);
       setError(
         caught instanceof Error ? caught.message : "Tarif indisponible.",
@@ -86,8 +80,6 @@ export function ShippingEstimator({
             onChange={(event) => {
               setCity(event.target.value);
               if (quote) {
-                setQuote(null);
-                setQuotedSubtotal(null);
                 onQuoteChange(null);
               }
             }}
@@ -107,7 +99,7 @@ export function ShippingEstimator({
       </div>
       <div id="shipping-estimate-status" className="mt-3 min-h-10 text-xs" aria-live="polite">
         {error ? <p className="font-bold text-danger">{error}</p> : null}
-        {quote && quotedSubtotal === subtotal ? (
+        {quote ? (
           <p className="leading-relaxed text-muted">
             <strong className="text-foreground">{quote.zoneName}</strong> · {quote.isFree ? "Offerte" : formatMad(quote.fee)} · {quote.estimatedDaysMin}–{quote.estimatedDaysMax} jours ouvrés
           </p>

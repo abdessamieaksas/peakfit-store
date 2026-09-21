@@ -78,3 +78,42 @@ test("keeps the checkout form and focuses the first invalid field", async ({ pag
   await expect(page.getByLabel("Nom complet")).toBeFocused();
   await expect(page).toHaveURL(/\/commande$/);
 });
+
+test("carries a city delivery estimate into checkout until the city changes", async ({
+  page,
+}) => {
+  await page.route("**/api/shipping/estimate", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        quote: {
+          zoneCode: "casa-rabat",
+          zoneName: "Axe Casablanca–Rabat",
+          city: "Casablanca",
+          fee: 3500,
+          estimatedDaysMin: 1,
+          estimatedDaysMax: 2,
+          isFree: false,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/panier");
+  await page.getByLabel("Estimer la livraison").fill("Casablanca");
+  await page.getByRole("button", { name: "Calculer" }).click();
+  await expect(page.getByText("Total estimé")).toBeVisible();
+  await expect(page.getByText("384 MAD")).toBeVisible();
+
+  await page.getByRole("link", { name: "Passer la commande" }).click();
+  await expect(page.getByLabel("Ville")).toHaveValue("Casablanca");
+  await expect(
+    page.getByRole("button", { name: /Confirmer — 384/ }),
+  ).toBeVisible();
+
+  await page.getByLabel("Ville").fill("Rabat");
+  await expect(
+    page.getByRole("button", { name: /Confirmer — 349/ }),
+  ).toBeVisible();
+});

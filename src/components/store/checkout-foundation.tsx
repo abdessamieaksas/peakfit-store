@@ -2,7 +2,12 @@
 
 import { LoaderCircle, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/cart-context";
@@ -11,6 +16,7 @@ import {
   codOrderResultSchema,
   createCodOrderInputSchema,
 } from "@/features/checkout/domain/order";
+import { normalizeCity } from "@/features/shipping/domain/quote";
 import { formatMad } from "@/lib/money";
 
 type FieldName =
@@ -51,7 +57,16 @@ export function CheckoutFoundation() {
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
-  const { lines, total, clearCart } = useCart();
+  const { lines, total, shippingQuote, clearCart } = useCart();
+  const [deliveryCity, setDeliveryCity] = useState(
+    () => shippingQuote?.city ?? "",
+  );
+  const quoteMatchesDeliveryCity = Boolean(
+    shippingQuote &&
+      normalizeCity(deliveryCity) === normalizeCity(shippingQuote.city),
+  );
+  const estimatedTotal =
+    total + (quoteMatchesDeliveryCity ? shippingQuote?.fee ?? 0 : 0);
 
   function focusFirstError(nextErrors: Errors) {
     const firstError = Object.keys(nextErrors)[0] as FieldName | undefined;
@@ -217,7 +232,15 @@ export function CheckoutFoundation() {
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="city" label="Ville" autoComplete="address-level2" error={errors.city} required />
+        <Field
+          id="city"
+          label="Ville"
+          autoComplete="address-level2"
+          value={deliveryCity}
+          onChange={(event) => setDeliveryCity(event.target.value)}
+          error={errors.city}
+          required
+        />
         <Field
           id="region"
           label="Région"
@@ -284,14 +307,26 @@ export function CheckoutFoundation() {
         ) : null}
       </div>
 
-      <Button type="submit" size="lg" variant="accent" className="mt-2 w-full" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        size="lg"
+        variant="accent"
+        className="mt-2 w-full"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? (
           <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
         ) : (
           <LockKeyhole aria-hidden="true" className="size-5" />
         )}
-        {isSubmitting ? "Envoi sécurisé…" : `Confirmer — ${formatMad(total)}`}
+        {isSubmitting ? "Envoi sécurisé…" : `Confirmer — ${formatMad(estimatedTotal)}`}
       </Button>
+      {quoteMatchesDeliveryCity && shippingQuote ? (
+        <p className="text-center text-xs leading-relaxed text-muted">
+          Total estimé pour {shippingQuote.city}, livraison incluse. Le montant
+          final est revérifié à la commande.
+        </p>
+      ) : null}
       <p className="text-center text-xs leading-relaxed text-muted">
         Aucun débit maintenant. Tu règles en espèces à la réception du colis.
       </p>
@@ -307,6 +342,8 @@ type FieldProps = {
   autoComplete: string;
   inputMode?: "tel" | "email" | "numeric";
   placeholder?: string;
+  value?: string;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   required?: boolean;
 };

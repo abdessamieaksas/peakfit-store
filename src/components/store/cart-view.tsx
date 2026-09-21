@@ -3,23 +3,22 @@
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
 import { ShippingEstimator } from "@/components/store/shipping-estimator";
 import { buttonVariants } from "@/components/ui/button";
 import { useCart } from "@/features/cart/cart-context";
-import type { ShippingQuote } from "@/features/shipping/domain/types";
 import { formatMad } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export function CartView() {
-  const { lines, total, removeLine, setQuantity } = useCart();
-  const [shippingEstimate, setShippingEstimate] = useState<{
-    subtotal: number;
-    quote: ShippingQuote;
-  } | null>(null);
-  const shippingQuote =
-    shippingEstimate?.subtotal === total ? shippingEstimate.quote : null;
+  const {
+    lines,
+    total,
+    shippingQuote,
+    removeLine,
+    setQuantity,
+    setShippingQuote,
+  } = useCart();
 
   if (!lines.length) {
     return (
@@ -144,9 +143,8 @@ export function CartView() {
         </div>
         <ShippingEstimator
           subtotal={total}
-          onQuoteChange={(quote) =>
-            setShippingEstimate(quote ? { subtotal: total, quote } : null)
-          }
+          quote={shippingQuote}
+          onQuoteChange={setShippingQuote}
         />
         <Link
           href="/commande"
