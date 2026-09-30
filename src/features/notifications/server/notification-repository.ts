@@ -9,6 +9,17 @@ import {
 import { getServerEnv } from "@/lib/config/env";
 import { getDb } from "@/lib/db/client";
 
+/**
+ * The PostgreSQL driver maps timestamps to JavaScript Dates, which retain only
+ * millisecond precision. Lease timestamps in Postgres retain microseconds, so
+ * an equality check can leave a successfully handled job stuck in PROCESSING.
+ */
+export function notificationLeaseWindow(leasedAt: Date) {
+  const start = leasedAt.toISOString();
+  const end = new Date(leasedAt.getTime() + 1).toISOString();
+  return { start, end };
+}
+
 export async function ensureAdminOrderNotification(orderReference?: string) {
   const env = getServerEnv();
   if (!env.ADMIN_ORDER_EMAIL) return;
@@ -101,6 +112,8 @@ export async function markNotificationSent(
   job: NotificationJob,
   providerMessageId: string,
 ) {
+  const lease = notificationLeaseWindow(job.leasedAt);
+
   await getDb().execute(sql`
     UPDATE public.notification_outbox
     SET
@@ -111,11 +124,14 @@ export async function markNotificationSent(
       updated_at = now()
     WHERE id = ${job.id}::uuid
       AND status = 'PROCESSING'
-      AND leased_at = ${job.leasedAt.toISOString()}::timestamptz
+      AND leased_at >= ${lease.start}::timestamptz
+      AND leased_at < ${lease.end}::timestamptz
   `);
 }
 
 export async function releaseUnconfiguredNotification(job: NotificationJob) {
+  const lease = notificationLeaseWindow(job.leasedAt);
+
   await getDb().execute(sql`
     UPDATE public.notification_outbox
     SET
@@ -127,7 +143,8 @@ export async function releaseUnconfiguredNotification(job: NotificationJob) {
       updated_at = now()
     WHERE id = ${job.id}::uuid
       AND status = 'PROCESSING'
-      AND leased_at = ${job.leasedAt.toISOString()}::timestamptz
+      AND leased_at >= ${lease.start}::timestamptz
+      AND leased_at < ${lease.end}::timestamptz
   `);
 }
 
@@ -138,6 +155,7 @@ export async function markNotificationFailed(
 ) {
   const status = retryable && job.attempts < job.maxAttempts ? "FAILED" : "CANCELLED";
   const retryMinutes = Math.min(6 * 60, 2 ** Math.min(job.attempts, 8));
+  const lease = notificationLeaseWindow(job.leasedAt);
 
   await getDb().execute(sql`
     UPDATE public.notification_outbox
@@ -149,6 +167,7 @@ export async function markNotificationFailed(
       updated_at = now()
     WHERE id = ${job.id}::uuid
       AND status = 'PROCESSING'
-      AND leased_at = ${job.leasedAt.toISOString()}::timestamptz
+      AND leased_at >= ${lease.start}::timestamptz
+      AND leased_at < ${lease.end}::timestamptz
   `);
 }

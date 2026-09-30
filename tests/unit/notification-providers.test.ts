@@ -8,6 +8,7 @@ import {
   sendEmailNotification,
   sendWhatsAppNotification,
 } from "@/features/notifications/server/providers";
+import { notificationLeaseWindow } from "@/features/notifications/server/notification-repository";
 import { renderOrderEmail } from "@/features/notifications/server/templates";
 
 const originalEnv = { ...process.env };
@@ -37,6 +38,13 @@ afterEach(() => {
 });
 
 describe("notification providers", () => {
+  it("matches a Postgres microsecond lease within its JavaScript millisecond", () => {
+    expect(notificationLeaseWindow(new Date("2026-10-01T15:52:03.782Z"))).toEqual({
+      start: "2026-10-01T15:52:03.782Z",
+      end: "2026-10-01T15:52:03.783Z",
+    });
+  });
+
   it("escapes customer content in the transactional email", () => {
     const email = renderOrderEmail(job);
 
