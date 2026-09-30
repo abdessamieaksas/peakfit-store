@@ -17,6 +17,26 @@ export function AdminSignIn({ reason }: { reason?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
 
+  async function signInWithGoogle() {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/admin",
+      });
+
+      if (result.error) {
+        setError("Connexion Google indisponible. Réessaie ou utilise ton e-mail.");
+      }
+    } catch {
+      setError("Connexion Google indisponible. Réessaie ou utilise ton e-mail.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -63,6 +83,18 @@ export function AdminSignIn({ reason }: { reason?: string }) {
           {error}
         </p>
       ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        disabled={isSubmitting}
+        onClick={signInWithGoogle}
+      >
+        Continuer avec Google
+      </Button>
+      <p className="-mt-2 text-center text-xs font-bold uppercase tracking-[0.12em] text-muted">
+        ou avec e-mail
+      </p>
       {mode === "sign-up" ? (
         <div>
           <label htmlFor="admin-name" className="text-sm font-extrabold">Nom</label>
@@ -93,10 +125,14 @@ export function AdminSignIn({ reason }: { reason?: string }) {
           id="admin-password"
           name="password"
           type="password"
-          autoComplete="current-password"
+            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
           required
+            minLength={8}
           className="mt-2 min-h-12 w-full rounded-md border border-border bg-surface px-3 text-sm outline-none focus:border-focus focus:ring-2 focus:ring-focus/30"
         />
+          {mode === "sign-up" ? (
+            <p className="mt-2 text-xs text-muted">Au moins 8 caractères. Utilise un mot de passe unique.</p>
+          ) : null}
       </div>
       <Button type="submit" variant="accent" size="lg" disabled={isSubmitting}>
         {isSubmitting ? (
