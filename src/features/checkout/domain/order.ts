@@ -145,6 +145,34 @@ export const codOrderResultSchema = z
     },
   );
 
+/**
+ * PostgreSQL JSON timestamps commonly use an explicit `+00:00` offset, while
+ * the public contract intentionally stores canonical ISO timestamps with `Z`.
+ * Normalize only that transport detail before validating the full result.
+ */
+export function parseCodOrderResult(value: unknown): CodOrderResult {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return codOrderResultSchema.parse(value);
+  }
+
+  const result = value as Record<string, unknown>;
+
+  if (typeof result.reservationExpiresAt !== "string") {
+    return codOrderResultSchema.parse(value);
+  }
+
+  const reservationExpiresAt = new Date(result.reservationExpiresAt);
+
+  if (Number.isNaN(reservationExpiresAt.getTime())) {
+    return codOrderResultSchema.parse(value);
+  }
+
+  return codOrderResultSchema.parse({
+    ...value,
+    reservationExpiresAt: reservationExpiresAt.toISOString(),
+  });
+}
+
 export type CreateCodOrderInput = z.input<typeof createCodOrderInputSchema>;
 export type CreateCodOrderCommand = z.output<typeof createCodOrderInputSchema>;
 export type CodOrderResult = z.output<typeof codOrderResultSchema>;

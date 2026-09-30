@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 
 import {
   CodOrderError,
-  codOrderResultSchema,
+  parseCodOrderResult,
   type CodOrderErrorCode,
   type CodOrderResult,
   type CreateCodOrderCommand,
@@ -62,7 +62,7 @@ export async function createCodOrder(
     const payload = result.rows[0]?.result;
 
     if (!payload) throw new Error("The order function returned no result.");
-    return codOrderResultSchema.parse(payload);
+    return parseCodOrderResult(payload);
   } catch (error) {
     translateDatabaseError(error);
   }

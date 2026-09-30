@@ -4,6 +4,7 @@ import {
   CodOrderError,
   codOrderResultSchema,
   createCodOrderInputSchema,
+  parseCodOrderResult,
 } from "@/features/checkout/domain/order";
 import { fingerprintCodOrder } from "@/features/checkout/server/fingerprint";
 import { toPublicCodOrderError } from "@/features/checkout/server/public-error";
@@ -83,5 +84,22 @@ describe("COD order submission", () => {
         duplicate: true,
       }).status,
     ).toBe("CONTACTED");
+  });
+
+  it("normalizes the timestamp format returned by PostgreSQL JSON", () => {
+    expect(
+      parseCodOrderResult({
+        reference: "PF-260930-ABC12345",
+        status: "NEW",
+        currency: "MAD",
+        subtotal: 25900,
+        shippingFee: 3500,
+        total: 29400,
+        estimatedDaysMin: 1,
+        estimatedDaysMax: 2,
+        reservationExpiresAt: "2026-10-01T15:52:03.782558+00:00",
+        duplicate: false,
+      }).reservationExpiresAt,
+    ).toBe("2026-10-01T15:52:03.782Z");
   });
 });
