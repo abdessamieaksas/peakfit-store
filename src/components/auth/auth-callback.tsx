@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
+import { cn } from "@/lib/utils";
 
 type AuthCallbackProps = {
   destination: "/admin" | "/compte";
@@ -51,9 +52,9 @@ export function AuthCallback({ destination, retryHref }: AuthCallbackProps) {
           <>
             <h1 className="font-display text-4xl font-extrabold uppercase">Connexion interrompue</h1>
             <p role="alert" className="mt-4 text-sm leading-relaxed text-muted">{error}</p>
-            <Button asChild variant="accent" className="mt-7">
-              <Link href={retryHref}>Revenir à la connexion</Link>
-            </Button>
+            <Link href={retryHref} className={cn(buttonVariants({ variant: "accent" }), "mt-7")}>
+              Revenir à la connexion
+            </Link>
           </>
         ) : (
           <>

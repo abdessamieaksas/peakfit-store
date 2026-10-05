@@ -9,6 +9,7 @@ import { OrderStatusControls } from "@/components/admin/order-status-controls";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { ORDER_STATUS_LABELS } from "@/features/orders/domain/status";
+import { buildWhatsAppOrderMessage } from "@/features/orders/domain/whatsapp-message";
 import { getAdminOrder } from "@/features/orders/server/admin-order-repository";
 import { canManageOrders, requireAdmin } from "@/lib/auth/access";
 import { formatMad } from "@/lib/money";
@@ -30,7 +31,10 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
   const phone = order.customerPhone.replace(/[^\d+]/g, "");
   const whatsappPhone = order.customerPhone.replace(/\D/g, "");
-  const whatsappMessage = encodeURIComponent(`Bonjour ${order.customerName}, c’est Peakfit. Nous te contactons concernant ta commande ${order.reference} de ${formatMad(order.total)}.`);
+  const whatsappMessage = encodeURIComponent(buildWhatsAppOrderMessage(order));
+  const whatsappAction = order.status === "NEW" || order.status === "CONTACTED"
+    ? "Préparer la confirmation sur WhatsApp"
+    : "Contacter sur WhatsApp";
 
   return (
     <>
@@ -88,7 +92,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               {order.customerEmail ? <p className="mt-1 break-all text-sm text-muted">{order.customerEmail}</p> : null}
               <div className="mt-5 grid gap-2">
                 <a href={`tel:${phone}`} className={cn(buttonVariants({ variant: "accent" }), "w-full")}><Phone aria-hidden="true" className="size-4" />Appeler</a>
-                <a href={`https://wa.me/${whatsappPhone}?text=${whatsappMessage}`} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: "outline" }), "w-full")}><MessageCircle aria-hidden="true" className="size-4" />WhatsApp</a>
+                <a href={`https://wa.me/${whatsappPhone}?text=${whatsappMessage}`} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: "outline" }), "w-full")}><MessageCircle aria-hidden="true" className="size-4" />{whatsappAction}</a>
+                <p className="text-xs leading-relaxed text-muted">Le récapitulatif s’ouvre dans WhatsApp. Vérifie-le, puis appuie sur Envoyer. Après l’envoi, passe le statut à « Client contacté ».</p>
                 {order.customerEmail ? <a href={`mailto:${order.customerEmail}`} className={cn(buttonVariants({ variant: "ghost" }), "w-full")}><Mail aria-hidden="true" className="size-4" />E-mail</a> : null}
               </div>
             </section>

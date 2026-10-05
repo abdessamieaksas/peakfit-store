@@ -1,4 +1,13 @@
+import { Camera, MessageCircle } from "lucide-react";
 import Link from "next/link";
+
+import { publicEnv } from "@/lib/config/env";
+
+const instagramUrl = "https://www.instagram.com/peakfit__store/";
+const whatsappNumber = publicEnv.NEXT_PUBLIC_WHATSAPP_NUMBER;
+const whatsappDisplayNumber = whatsappNumber.startsWith("212") && whatsappNumber.length === 12
+  ? `+212 ${whatsappNumber.slice(3, 6)} ${whatsappNumber.slice(6, 9)} ${whatsappNumber.slice(9)}`
+  : `+${whatsappNumber}`;
 
 const links = [
   { href: "/shop", label: "Shop" },
@@ -34,10 +43,34 @@ export function SiteFooter() {
         </div>
         <div>
           <h2 className="text-xs font-extrabold uppercase tracking-[0.14em] text-accent">
-            Paiement
+            Suivre & contacter Peakfit
           </h2>
-          <p className="mt-4 text-sm text-background/70">
-            Cash on Delivery, en dirhams marocains. Aucun paiement en ligne au lancement.
+          <ul className="mt-4 grid gap-3 text-sm">
+            <li>
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-background/80 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Camera aria-hidden="true" className="size-4" />
+                Instagram · @peakfit__store
+              </a>
+            </li>
+            <li>
+              <a
+                href={`https://wa.me/${whatsappNumber}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-background/80 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <MessageCircle aria-hidden="true" className="size-4" />
+                WhatsApp · {whatsappDisplayNumber}
+              </a>
+            </li>
+          </ul>
+          <p className="mt-5 text-xs leading-relaxed text-background/60">
+            Paiement à la livraison, en dirhams marocains.
           </p>
         </div>
       </div>

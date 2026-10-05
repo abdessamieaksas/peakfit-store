@@ -5,7 +5,7 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_WHATSAPP_NUMBER: z
     .string()
     .regex(/^\d{10,15}$/)
-    .default("212600000000"),
+    .default("212719427447"),
 });
 
 const serverEnvSchema = z.object({

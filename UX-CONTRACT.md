@@ -70,6 +70,7 @@
 | Create product | `Créer le produit` | stable busy button | product list | `Produit créé` | preserve fields + inline/banner errors | new row/list heading | `PRODUCT.md` |
 | Edit product | `Enregistrer` | stable busy button | product list | `Modifications enregistrées` | preserve form and retry | updated row/list heading | `PRODUCT.md` |
 | Submit COD order | `Confirmer la commande` | pessimistic busy state | thank-you route | reference + next steps | preserve non-sensitive checkout data | confirmation heading | `PRODUCT.md` |
+| Prepare WhatsApp confirmation | `Préparer la confirmation sur WhatsApp` on an order | no order mutation; open an encoded draft | WhatsApp app or WhatsApp Web | operator reviews and sends the itemized order summary | phone/email contact actions remain available | order detail remains open; operator records `CONTACTED` only after sending | `PRODUCT.md` |
 | Search | search field | stable list loading | same URL-backed route | result count region | retain query + retry | input or result heading | this contract |
 | Bulk order action | named status action | busy toolbar/dialog | same list | exact succeeded/failed counts | preserve failures | surviving row/list heading | order lifecycle |
 | Upload media | `Ajouter des images` | per-file progress | same product form | per-file status | keep valid files + retry failed file | upload summary | `PRODUCT.md` |
