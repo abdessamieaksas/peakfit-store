@@ -16,6 +16,13 @@ export type AdminAccess = {
   role: AdminRole;
 };
 
+export type CustomerAccess = {
+  userId: string;
+  email: string | null;
+  emailVerified: boolean;
+  displayName: string | null;
+};
+
 function allowedAdminEmails() {
   return new Set(
     (getServerEnv().ADMIN_EMAILS ?? "")
@@ -61,6 +68,31 @@ export async function getAdminAccess(): Promise<AdminAccess | null> {
 export async function requireAdmin(): Promise<AdminAccess> {
   const access = await getAdminAccess();
   if (!access) redirect("/admin/connexion?reason=forbidden");
+  return access;
+}
+
+export async function getCustomerAccess(): Promise<CustomerAccess | null> {
+  try {
+    const { data } = await getNeonAuth().getSession();
+    const user = data?.user;
+    if (!user?.id) return null;
+
+    return {
+      userId: user.id,
+      email: user.email ?? null,
+      emailVerified: user.emailVerified,
+      displayName: user.name ?? null,
+    };
+  } catch {
+    // Accounts are optional at checkout. An unavailable auth service must not
+    // prevent a shopper from placing a COD order as a guest.
+    return null;
+  }
+}
+
+export async function requireCustomer(): Promise<CustomerAccess> {
+  const access = await getCustomerAccess();
+  if (!access) redirect("/compte/connexion");
   return access;
 }
 

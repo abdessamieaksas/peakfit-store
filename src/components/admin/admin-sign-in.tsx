@@ -24,7 +24,12 @@ export function AdminSignIn({ reason }: { reason?: string }) {
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/admin",
+        // Neon Auth appends a short-lived verifier to this URL. The dedicated
+        // page redeems it before asking the protected dashboard for a session.
+        callbackURL: new URL(
+          "/admin/connexion/retour",
+          window.location.origin,
+        ).toString(),
       });
 
       if (result.error) {

@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { CartLink } from "./cart-link";
@@ -58,6 +58,13 @@ export function SiteHeader() {
               <Search aria-hidden="true" className="size-5" />
             </Link>
             <ThemeToggle />
+            <Link
+              href="/compte"
+              className="inline-flex size-11 items-center justify-center rounded-full transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              aria-label="Mon compte"
+            >
+              <UserRound aria-hidden="true" className="size-5" />
+            </Link>
             <CartLink />
           </div>
         </div>

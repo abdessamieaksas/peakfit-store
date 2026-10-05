@@ -59,6 +59,14 @@ export function MobileMenu() {
               ))}
             </ul>
           </nav>
+          <Dialog.Close asChild>
+            <Link
+              href="/compte"
+              className="mt-7 flex min-h-12 items-center border-b border-border py-3 font-bold transition-colors hover:text-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              Mon compte
+            </Link>
+          </Dialog.Close>
           <div className="absolute inset-x-6 bottom-6 border-t border-border pt-5 text-sm text-muted">
             Paiement à la livraison · Partout au Maroc
           </div>
