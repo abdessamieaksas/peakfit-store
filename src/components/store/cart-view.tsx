@@ -4,7 +4,6 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { ShippingEstimator } from "@/components/store/shipping-estimator";
 import { buttonVariants } from "@/components/ui/button";
 import { useCart } from "@/features/cart/cart-context";
 import { formatMad } from "@/lib/money";
@@ -14,10 +13,8 @@ export function CartView() {
   const {
     lines,
     total,
-    shippingQuote,
     removeLine,
     setQuantity,
-    setShippingQuote,
   } = useCart();
 
   if (!lines.length) {
@@ -125,27 +122,17 @@ export function CartView() {
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-muted">Livraison</dt>
-            <dd className="font-bold tabular-nums">
-              {shippingQuote
-                ? shippingQuote.isFree
-                  ? "Offerte"
-                  : formatMad(shippingQuote.fee)
-                : "À estimer"}
-            </dd>
+            <dd className="font-bold text-success">Offerte</dd>
           </div>
         </dl>
         <div className="my-5 h-px bg-border" />
         <div className="flex justify-between gap-4 text-lg font-extrabold">
-          <span>{shippingQuote ? "Total estimé" : "Total provisoire"}</span>
-          <span className="tabular-nums">
-            {formatMad(total + (shippingQuote?.fee ?? 0))}
-          </span>
+          <span>Total produits</span>
+          <span className="tabular-nums">{formatMad(total)}</span>
         </div>
-        <ShippingEstimator
-          subtotal={total}
-          quote={shippingQuote}
-          onQuoteChange={setShippingQuote}
-        />
+        <p className="mt-4 text-xs leading-relaxed text-muted">
+          Livraison gratuite partout au Maroc. Le total est confirmé avant l’envoi.
+        </p>
         <Link
           href="/commande"
           className={cn(buttonVariants({ variant: "accent", size: "lg" }), "mt-6 w-full")}

@@ -19,7 +19,7 @@ export function AdminSignOut() {
       onClick={async () => {
         setPending(true);
         await authClient.signOut();
-        router.replace("/admin/connexion");
+        router.replace("/connexion");
         router.refresh();
       }}
     >

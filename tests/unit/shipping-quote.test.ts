@@ -12,18 +12,21 @@ describe("shipping quotes", () => {
     expect(normalizeCity("Salé")).toBe("sale");
   });
 
-  it("uses the configured city zone", () => {
+  it("keeps city delivery estimates while applying free delivery", () => {
     const quote = quoteFromZones("Casablanca", 25900, sampleShippingZones);
 
     expect(quote.zoneCode).toBe("casa-rabat");
-    expect(quote.fee).toBe(3500);
+    expect(quote.fee).toBe(0);
+    expect(quote.isFree).toBe(true);
     expect(quote.estimatedDaysMax).toBe(2);
   });
 
-  it("applies free shipping thresholds and a national fallback", () => {
-    expect(quoteFromZones("Rabat", 70000, sampleShippingZones).fee).toBe(0);
-    expect(quoteFromZones("Oujda", 25900, sampleShippingZones).zoneCode).toBe(
-      "maroc",
-    );
+  it("applies free delivery to all cities and basket values", () => {
+    for (const city of ["Rabat", "Oujda"]) {
+      const quote = quoteFromZones(city, 100, sampleShippingZones);
+      expect(quote.fee).toBe(0);
+      expect(quote.isFree).toBe(true);
+    }
+    expect(quoteFromZones("Oujda", 100, sampleShippingZones).zoneCode).toBe("maroc");
   });
 });

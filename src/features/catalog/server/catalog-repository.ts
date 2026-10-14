@@ -22,12 +22,6 @@ import {
   variantOptionValues,
 } from "@/lib/db/schema";
 
-function badgeFromTags(tags: string[]): CatalogProduct["badge"] {
-  if (tags.includes("badge:best-seller")) return "Best-seller";
-  if (tags.includes("badge:nouveau")) return "Nouveau";
-  return undefined;
-}
-
 export async function listCatalogCategories(): Promise<CatalogCategory[]> {
   const env = getServerEnv();
   if (env.STORE_DATA_SOURCE === "sample") return catalogCategories;
@@ -64,7 +58,6 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
       category: categories.slug,
       price: products.basePrice,
       compareAtPrice: products.compareAtPrice,
-      tags: products.tags,
       image: productImages.publicUrl,
       imageWidth: productImages.width,
       imageHeight: productImages.height,
@@ -214,7 +207,6 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
       category: row.category ?? "tous",
       price: row.price,
       compareAtPrice: row.compareAtPrice ?? undefined,
-      badge: badgeFromTags(row.tags),
       image: row.image,
       imageWidth: row.imageWidth,
       imageHeight: row.imageHeight,

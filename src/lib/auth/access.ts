@@ -6,8 +6,10 @@ import { redirect } from "next/navigation";
 import { getNeonAuth } from "@/lib/auth/server";
 import { getServerEnv } from "@/lib/config/env";
 import { getDb } from "@/lib/db/client";
+import type { AdminRole } from "@/lib/auth/permissions";
 
-export type AdminRole = "OWNER" | "MANAGER" | "FULFILMENT" | "VIEWER";
+export { canManageCatalog, canManageOrders, canManageTeam } from "@/lib/auth/permissions";
+export type { AdminRole, StaffRole } from "@/lib/auth/permissions";
 
 export type AdminAccess = {
   userId: string;
@@ -39,11 +41,33 @@ export async function getAdminAccess(): Promise<AdminAccess | null> {
 
   const email = user.email.toLowerCase();
   const db = getDb();
-  if (allowedAdminEmails().has(email)) {
+  if (user.emailVerified && allowedAdminEmails().has(email)) {
     await db.execute(sql`
-      INSERT INTO public.admin_profiles (auth_user_id, display_name, role, is_active)
-      VALUES (${user.id}, ${user.name || email}, 'OWNER', true)
+      INSERT INTO public.admin_profiles (auth_user_id, email, display_name, role, is_active)
+      VALUES (${user.id}, ${email}, ${user.name || email}, 'OWNER', true)
       ON CONFLICT (auth_user_id) DO NOTHING
+    `);
+  }
+
+  if (user.emailVerified) {
+    // Claim an owner-created invitation only after the identity provider has
+    // verified the matching address. The client cannot choose or elevate role.
+    await db.execute(sql`
+      WITH claimed AS (
+        DELETE FROM public.admin_invitations
+        WHERE email = ${email}
+        RETURNING email, display_name, role
+      )
+      INSERT INTO public.admin_profiles
+        (auth_user_id, email, display_name, role, is_active)
+      SELECT ${user.id}, claimed.email, claimed.display_name, claimed.role, true
+      FROM claimed
+      ON CONFLICT (auth_user_id) DO NOTHING
+    `);
+    await db.execute(sql`
+      UPDATE public.admin_profiles
+      SET email = ${email}
+      WHERE auth_user_id = ${user.id} AND email IS DISTINCT FROM ${email}
     `);
   }
 
@@ -67,7 +91,7 @@ export async function getAdminAccess(): Promise<AdminAccess | null> {
 
 export async function requireAdmin(): Promise<AdminAccess> {
   const access = await getAdminAccess();
-  if (!access) redirect("/admin/connexion?reason=forbidden");
+  if (!access) redirect("/connexion?reason=forbidden");
   return access;
 }
 
@@ -92,10 +116,6 @@ export async function getCustomerAccess(): Promise<CustomerAccess | null> {
 
 export async function requireCustomer(): Promise<CustomerAccess> {
   const access = await getCustomerAccess();
-  if (!access) redirect("/compte/connexion");
+  if (!access) redirect("/connexion");
   return access;
-}
-
-export function canManageOrders(role: AdminRole) {
-  return role !== "VIEWER";
 }

@@ -123,7 +123,7 @@ Store navigation is a desktop horizontal bar and a modal left drawer on phones. 
 
 ### Forms and overlays
 
-Fields use persistent labels, clear help/error association, app-owned validation, and `noValidate`. Authored Radix/shadcn listboxes own popup geometry. Dialogs, drawers, toasts, tooltips, and menus use the shared layer scale. Upload controls always provide a visible picker in addition to drag and drop. Customer checkout avoids accounts and unnecessary fields.
+Fields use persistent labels, clear help/error association, app-owned validation, and `noValidate`. Straightforward admin choices use native selects and accept the operating-system popup; use an authored Radix/shadcn listbox only when the product must own popup geometry or behavior. Dialogs, drawers, toasts, tooltips, and menus use the shared layer scale. Upload controls always provide a visible picker in addition to drag and drop. Customer checkout avoids accounts and unnecessary fields.
 
 ### Iconography
 

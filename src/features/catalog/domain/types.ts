@@ -34,7 +34,6 @@ export type CatalogProduct = {
   category: string;
   price: number;
   compareAtPrice?: number;
-  badge?: "Nouveau" | "Best-seller";
   image: string;
   imageWidth: number;
   imageHeight: number;

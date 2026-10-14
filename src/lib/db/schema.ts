@@ -77,14 +77,28 @@ export const adminProfiles = pgTable(
   "admin_profiles",
   {
     authUserId: text("auth_user_id").primaryKey(),
+    email: varchar("email", { length: 254 }),
     displayName: varchar("display_name", { length: 120 }).notNull(),
     role: adminRoleEnum("role").default("VIEWER").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt,
     updatedAt,
   },
-  (table) => [index("admin_profiles_role_idx").on(table.role)],
+  (table) => [
+    index("admin_profiles_role_idx").on(table.role),
+    uniqueIndex("admin_profiles_email_uq").on(table.email),
+  ],
 );
+
+export const adminInvitations = pgTable("admin_invitations", {
+  email: varchar("email", { length: 254 }).primaryKey(),
+  displayName: varchar("display_name", { length: 120 }).notNull(),
+  role: adminRoleEnum("role").notNull(),
+  invitedByAdminId: text("invited_by_admin_id")
+    .notNull()
+    .references(() => adminProfiles.authUserId, { onDelete: "restrict" }),
+  createdAt,
+});
 
 export const categories = pgTable(
   "categories",
@@ -251,6 +265,32 @@ export const productVariants = pgTable(
     check(
       "product_variants_weight_positive",
       sql`${table.weightGrams} IS NULL OR ${table.weightGrams} > 0`,
+    ),
+  ],
+);
+
+export const inventoryAdjustments = pgTable(
+  "inventory_adjustments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "restrict" }),
+    actorAdminId: text("actor_admin_id")
+      .notNull()
+      .references(() => adminProfiles.authUserId, { onDelete: "restrict" }),
+    changeQuantity: integer("change_quantity").notNull(),
+    stockBefore: integer("stock_before").notNull(),
+    stockAfter: integer("stock_after").notNull(),
+    reason: varchar("reason", { length: 240 }).notNull(),
+    createdAt,
+  },
+  (table) => [
+    index("inventory_adjustments_variant_created_idx").on(table.variantId, table.createdAt),
+    check("inventory_adjustments_change_nonzero", sql`${table.changeQuantity} <> 0`),
+    check(
+      "inventory_adjustments_stock_consistent",
+      sql`${table.stockBefore} >= 0 AND ${table.stockAfter} >= 0 AND ${table.stockAfter} - ${table.stockBefore} = ${table.changeQuantity}`,
     ),
   ],
 );
@@ -498,7 +538,7 @@ export const shippingZones = pgTable(
     nameAr: varchar("name_ar", { length: 120 }),
     cities: text("cities").array().default(sql`ARRAY[]::text[]`).notNull(),
     fee: integer("fee").notNull(),
-    freeShippingThreshold: integer("free_shipping_threshold"),
+    freeShippingThreshold: integer("free_shipping_threshold").default(0).notNull(),
     estimatedDaysMin: integer("estimated_days_min").notNull(),
     estimatedDaysMax: integer("estimated_days_max").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
@@ -509,8 +549,8 @@ export const shippingZones = pgTable(
     uniqueIndex("shipping_zones_code_uq").on(table.code),
     check("shipping_zones_fee_nonnegative", sql`${table.fee} >= 0`),
     check(
-      "shipping_zones_free_threshold_nonnegative",
-      sql`${table.freeShippingThreshold} IS NULL OR ${table.freeShippingThreshold} >= 0`,
+      "shipping_zones_free_threshold_zero",
+      sql`${table.freeShippingThreshold} = 0`,
     ),
     check(
       "shipping_zones_estimate_valid",

@@ -9,12 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
-type AuthCallbackProps = {
-  destination: "/admin" | "/compte";
-  retryHref: "/admin/connexion" | "/compte/connexion";
-};
-
-export function AuthCallback({ destination, retryHref }: AuthCallbackProps) {
+export function AuthCallback() {
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -32,7 +27,13 @@ export function AuthCallback({ destination, retryHref }: AuthCallbackProps) {
           return;
         }
 
-        router.replace(destination);
+        const destinationResult = await fetch("/api/auth/destination", { cache: "no-store" });
+        const destinationData = await destinationResult.json() as { destination?: "/admin" | "/compte" };
+        if (!destinationResult.ok || !destinationData.destination) {
+          setError("La connexion a réussi, mais ton espace n’a pas pu être ouvert. Réessaie.");
+          return;
+        }
+        router.replace(destinationData.destination);
         router.refresh();
       } catch {
         if (isCurrent) setError("La connexion n’a pas pu être finalisée. Réessaie.");
@@ -43,7 +44,7 @@ export function AuthCallback({ destination, retryHref }: AuthCallbackProps) {
     return () => {
       isCurrent = false;
     };
-  }, [destination, router]);
+  }, [router]);
 
   return (
     <main className="page-shell flex min-h-dvh items-center py-12">
@@ -52,7 +53,7 @@ export function AuthCallback({ destination, retryHref }: AuthCallbackProps) {
           <>
             <h1 className="font-display text-4xl font-extrabold uppercase">Connexion interrompue</h1>
             <p role="alert" className="mt-4 text-sm leading-relaxed text-muted">{error}</p>
-            <Link href={retryHref} className={cn(buttonVariants({ variant: "accent" }), "mt-7")}>
+            <Link href="/connexion" className={cn(buttonVariants({ variant: "accent" }), "mt-7")}>
               Revenir à la connexion
             </Link>
           </>

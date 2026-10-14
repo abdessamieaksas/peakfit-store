@@ -7,8 +7,8 @@ const items = [
     icon: PackageCheck,
   },
   {
-    label: "Livraison partout au Maroc",
-    detail: "Tarif calculé selon ta ville",
+    label: "Livraison gratuite",
+    detail: "Partout au Maroc, sans minimum d’achat",
     icon: MapPin,
   },
   {

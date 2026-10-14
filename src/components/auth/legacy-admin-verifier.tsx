@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth/client";
 
 /**
  * Compatibility for the early admin Google callback URL, which returned to
- * the storefront root. New sign-ins use /admin/connexion/retour instead.
+ * the storefront root. New sign-ins use the shared /connexion/retour route.
  */
 export function LegacyAdminVerifier() {
   const pathname = usePathname();

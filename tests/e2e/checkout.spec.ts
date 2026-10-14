@@ -37,8 +37,8 @@ test("submits a COD order without making the shopper send a message", async ({ p
           status: "NEW",
           currency: "MAD",
           subtotal: 34900,
-          shippingFee: 3500,
-          total: 38400,
+          shippingFee: 0,
+          total: 34900,
           estimatedDaysMin: 1,
           estimatedDaysMax: 3,
           reservationExpiresAt: "2026-09-11T14:00:00.000Z",
@@ -63,7 +63,7 @@ test("submits a COD order without making the shopper send a message", async ({ p
 
   await expect(page).toHaveURL(/\/commande\/merci$/);
   await expect(page.getByText("PF-260910-TEST1234")).toBeVisible();
-  await expect(page.getByText("384 MAD")).toBeVisible();
+  await expect(page.getByText("349 MAD")).toBeVisible();
   await expect(page.getByText("Tu n’as aucun message à envoyer.")).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("peakfit-cart-v2"))).toBe("[]");
 });
@@ -79,40 +79,24 @@ test("keeps the checkout form and focuses the first invalid field", async ({ pag
   await expect(page).toHaveURL(/\/commande$/);
 });
 
-test("carries a city delivery estimate into checkout until the city changes", async ({
-  page,
-}) => {
-  await page.route("**/api/shipping/estimate", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        quote: {
-          zoneCode: "casa-rabat",
-          zoneName: "Axe Casablanca–Rabat",
-          city: "Casablanca",
-          fee: 3500,
-          estimatedDaysMin: 1,
-          estimatedDaysMax: 2,
-          isFree: false,
-        },
-      }),
-    });
-  });
-
+test("shows free delivery without a city estimator and keeps the product total", async ({ page }) => {
   await page.goto("/panier");
-  await page.getByLabel("Estimer la livraison").fill("Casablanca");
-  await page.getByRole("button", { name: "Calculer" }).click();
-  await expect(page.getByText("Total estimé")).toBeVisible();
-  await expect(page.getByText("384 MAD")).toBeVisible();
+  await expect(page.getByText("Offerte", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("definition").filter({ hasText: "349 MAD" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Estimer la livraison")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Passer la commande" }).click();
-  await expect(page.getByLabel("Ville")).toHaveValue("Casablanca");
+  await expect(page.getByText("Offerte partout au Maroc")).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Confirmer — 384/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /Confirmer — 349/ }),
   ).toBeVisible();
 
-  await page.getByLabel("Ville").fill("Rabat");
+  await page.getByLabel("Ville").fill("Oujda");
   await expect(
     page.getByRole("button", { name: /Confirmer — 349/ }),
   ).toBeVisible();

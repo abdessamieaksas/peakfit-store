@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/shop", label: "Nouveautés" },
+  { href: "/shop", label: "Shop" },
   { href: "/shop?categorie=compression", label: "Compression" },
   { href: "/shop?categorie=graphique", label: "Graphique" },
   { href: "/shop?categorie=running", label: "Running" },
@@ -68,7 +68,7 @@ export function MobileMenu() {
             </Link>
           </Dialog.Close>
           <div className="absolute inset-x-6 bottom-6 border-t border-border pt-5 text-sm text-muted">
-            Paiement à la livraison · Partout au Maroc
+            Paiement à la livraison · Livraison gratuite
           </div>
         </Dialog.Content>
       </Dialog.Portal>

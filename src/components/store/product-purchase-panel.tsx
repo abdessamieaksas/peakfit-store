@@ -145,8 +145,8 @@ export function ProductPurchasePanel({ product }: { product: CatalogProduct }) {
         {selectedVariant ? "Ajouter au panier" : "Indisponible"}
       </Button>
       <p className="mt-3 text-center text-xs leading-relaxed text-muted">
-        Paiement à la livraison. Le stock et le total seront revérifiés avant
-        confirmation.
+        Livraison gratuite · Paiement à la livraison. Le stock et le total seront
+        revérifiés avant confirmation.
       </p>
     </div>
   );

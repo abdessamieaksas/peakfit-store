@@ -25,7 +25,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  NEW: ["CONTACTED", "CONFIRMED", "CANCELLED"],
+  NEW: ["CONTACTED", "CANCELLED"],
   CONTACTED: ["CONFIRMED", "CANCELLED", "REFUSED"],
   CONFIRMED: ["PREPARING", "CANCELLED"],
   PREPARING: ["SHIPPED", "CANCELLED"],

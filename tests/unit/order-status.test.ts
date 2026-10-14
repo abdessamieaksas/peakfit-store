@@ -35,4 +35,21 @@ describe("order lifecycle", () => {
     expect(canTransitionOrder("REFUSED", "DELIVERED")).toBe(false);
     expect(ORDER_TRANSITIONS.RETURNED).toHaveLength(0);
   });
+
+  it("defines every permitted action for each current status", () => {
+    expect(ORDER_TRANSITIONS).toEqual({
+      NEW: ["CONTACTED", "CANCELLED"],
+      CONTACTED: ["CONFIRMED", "CANCELLED", "REFUSED"],
+      CONFIRMED: ["PREPARING", "CANCELLED"],
+      PREPARING: ["SHIPPED", "CANCELLED"],
+      SHIPPED: ["DELIVERED", "REFUSED"],
+      DELIVERED: ["RETURNED"],
+      CANCELLED: [],
+      REFUSED: [],
+      RETURNED: [],
+    });
+    expect(canTransitionOrder("NEW", "CONFIRMED")).toBe(false);
+    expect(canTransitionOrder("CONTACTED", "CONFIRMED")).toBe(true);
+    expect(canTransitionOrder("SHIPPED", "CANCELLED")).toBe(false);
+  });
 });

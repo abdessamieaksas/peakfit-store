@@ -26,6 +26,11 @@ describe("sample catalog adapter", () => {
     expect(sampleProducts.every((product) => Number.isInteger(product.price))).toBe(true);
   });
 
+  it("does not invent new, best-seller, or discount claims for sample products", () => {
+    expect(sampleProducts.every((product) => !("badge" in product))).toBe(true);
+    expect(sampleProducts.every((product) => product.compareAtPrice === undefined)).toBe(true);
+  });
+
   it("exposes each purchasable option combination as a stable variant", () => {
     for (const product of sampleProducts) {
       const expectedVariantCount = product.options.reduce(

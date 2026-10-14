@@ -13,7 +13,7 @@
     "CRUD"
   ],
   "ownership": {
-    "Select/Listbox": "authored",
+    "Select/Listbox": "native",
     "Date": "typed"
   },
   "requiredCommands": ["lint", "typecheck", "unit", "build", "premium"],

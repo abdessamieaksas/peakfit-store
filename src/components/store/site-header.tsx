@@ -6,7 +6,7 @@ import { MobileMenu } from "./mobile-menu";
 import { ThemeToggle } from "./theme-toggle";
 
 const links = [
-  { href: "/shop", label: "Nouveautés" },
+  { href: "/shop", label: "Shop" },
   { href: "/shop?categorie=compression", label: "Compression" },
   { href: "/shop?categorie=graphique", label: "Graphique" },
   { href: "/shop?categorie=running", label: "Running" },
@@ -18,7 +18,7 @@ export function SiteHeader() {
       <div className="border-b border-border bg-surface text-[0.6875rem] font-bold uppercase tracking-[0.12em] sm:text-xs">
         <div className="page-shell flex min-h-9 items-center justify-center gap-3 text-center sm:justify-between">
           <span>Paiement à la livraison</span>
-          <span className="hidden sm:inline">Livraison partout au Maroc</span>
+          <span className="hidden sm:inline">Livraison gratuite partout au Maroc</span>
           <span className="hidden lg:inline">Échange facile sous 7 jours</span>
         </div>
       </div>

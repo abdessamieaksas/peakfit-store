@@ -19,7 +19,7 @@ export function normalizeCity(city: string) {
 
 export function quoteFromZones(
   city: string,
-  subtotal: number,
+  _subtotal: number,
   zones: ShippingZoneDefinition[],
 ): ShippingQuote {
   const normalizedCity = normalizeCity(city);
@@ -29,15 +29,15 @@ export function quoteFromZones(
 
   if (!zone) throw new Error("No active fallback shipping zone is configured.");
 
-  const isFree = Boolean(
-    zone.freeShippingThreshold && subtotal >= zone.freeShippingThreshold,
-  );
+  // Delivery is currently included in the listed product price for every city.
+  // Keep the zone's delivery-window metadata, but never expose an extra fee.
+  const isFree = true;
 
   return {
     zoneCode: zone.code,
     zoneName: zone.name,
     city: city.trim(),
-    fee: isFree ? 0 : zone.fee,
+    fee: 0,
     estimatedDaysMin: zone.estimatedDaysMin,
     estimatedDaysMax: zone.estimatedDaysMax,
     isFree,

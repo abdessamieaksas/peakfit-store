@@ -60,7 +60,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               </div>
               <dl className="ml-auto mt-5 grid max-w-sm grid-cols-[1fr_auto] gap-x-8 gap-y-2 text-sm">
                 <dt className="text-muted">Sous-total</dt><dd className="font-bold">{formatMad(order.subtotal)}</dd>
-                <dt className="text-muted">Livraison</dt><dd className="font-bold">{formatMad(order.shippingFee)}</dd>
+                <dt className="text-muted">Livraison</dt><dd className="font-bold">{order.shippingFee === 0 ? "Offerte" : formatMad(order.shippingFee)}</dd>
                 <dt className="border-t border-border pt-3 font-extrabold">Total à encaisser</dt><dd className="border-t border-border pt-3 text-lg font-extrabold">{formatMad(order.total)}</dd>
               </dl>
             </section>

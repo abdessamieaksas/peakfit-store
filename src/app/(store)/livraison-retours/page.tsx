@@ -11,7 +11,7 @@ export default function DeliveryReturnsPage() {
         <div>
           <h2 className="font-display text-3xl font-extrabold">Partout au Maroc</h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
-            Le tarif et le délai sont calculés selon la ville. Ils seront affichés avant l&apos;envoi définitif de la commande.
+            La livraison est gratuite partout au Maroc, sans minimum d’achat. Le délai estimé peut varier selon la ville et sera indiqué après la commande.
           </p>
         </div>
         <div>

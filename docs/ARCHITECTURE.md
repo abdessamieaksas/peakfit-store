@@ -92,7 +92,9 @@ Exceptions:
 ## Authentication and security
 
 - Public shopping is guest-first and does not require an account.
-- Admins authenticate through Neon Auth. Neon Auth identity maps to `admin_profiles`, which stores role and active state.
+- Customers and staff use one Neon Auth sign-in entry point. After a session is established, a verified active staff profile routes to the admin workspace; other signed-in users route to their customer account.
+- Neon Auth identity maps to `admin_profiles`, which stores role, verified email, and active state. `OWNER` is bootstrapped only from the server-side `ADMIN_EMAILS` allowlist; owners can create invitations for non-owner staff roles. A matching verified login claims the invitation.
+- Capability checks are enforced server-side: only owners manage team members; managers manage the catalogue; fulfilment staff process orders; viewers are read-only. UI visibility is supplemental, never authorization.
 - Server layouts verify the session; mutations verify capabilities and use a restricted application database role. Browser code never connects directly to Postgres.
 - Public catalog reads flow through server components or cacheable route handlers. Customer, order, note, reservation, and setting records are never exposed through public database credentials.
 - Order submission is server-only. `DATABASE_URL` and all administrative credentials stay server-side.

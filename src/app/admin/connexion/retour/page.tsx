@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminAuthCallbackPage() {
-  return <AuthCallback destination="/admin" retryHref="/admin/connexion" />;
+  return <AuthCallback />;
 }

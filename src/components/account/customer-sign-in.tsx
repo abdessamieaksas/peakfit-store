@@ -19,7 +19,7 @@ export function CustomerSignIn() {
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: new URL("/compte/retour", window.location.origin).toString(),
+        callbackURL: new URL("/connexion/retour", window.location.origin).toString(),
       });
       if (result.error) setError("Connexion Google indisponible. Réessaie ou utilise ton e-mail.");
     } catch {
@@ -54,7 +54,7 @@ export function CustomerSignIn() {
         setError(mode === "sign-in" ? "Connexion refusée. Vérifie tes identifiants." : "Impossible de créer ce compte. Vérifie les informations ou connecte-toi.");
         return;
       }
-      router.replace("/compte");
+      router.replace("/connexion/retour");
       router.refresh();
     } catch {
       setError("Connexion indisponible. Réessaie dans un instant.");
@@ -87,7 +87,7 @@ export function CustomerSignIn() {
       </div>
       <Button type="submit" variant="accent" size="lg" disabled={isSubmitting}>
         {isSubmitting ? <LoaderCircle aria-hidden="true" className="size-5 animate-spin" /> : mode === "sign-in" ? <LockKeyhole aria-hidden="true" className="size-5" /> : <UserPlus aria-hidden="true" className="size-5" />}
-        {isSubmitting ? "Patiente…" : mode === "sign-in" ? "Accéder à mes commandes" : "Créer mon compte"}
+        {isSubmitting ? "Patiente…" : mode === "sign-in" ? "Se connecter" : "Créer mon compte"}
       </Button>
       <button type="button" className="min-h-11 text-sm font-bold text-muted underline-offset-4 hover:text-foreground hover:underline" onClick={() => { setMode((current) => current === "sign-in" ? "sign-up" : "sign-in"); setError(""); }}>
         {mode === "sign-in" ? "Premier achat ? Créer un compte" : "Compte existant ? Se connecter"}

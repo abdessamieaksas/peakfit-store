@@ -6,7 +6,7 @@ Peakfit is a mobile-first Moroccan performance-wear store for compression tops, 
 
 - Currency: Moroccan dirham (`MAD` / `DH`).
 - Checkout: guest checkout with cash on delivery as the initial payment method.
-- Fulfilment: configurable shipping rates by Moroccan city or region.
+- Fulfilment: cash on delivery with free delivery throughout Morocco; the order total matches listed product prices.
 - Languages: French first, with Arabic-ready content fields and right-to-left support planned from the foundation.
 - Customer support: WhatsApp deep links with editable message templates.
 
@@ -45,7 +45,7 @@ Terminal or exception paths: `CANCELLED`, `REFUSED`, and `RETURNED`. Every trans
 ## Delivery phases
 
 - Phase 1: production foundation, architecture, schema, environment validation, design system, and reusable storefront shell.
-- Phase 2: catalog, product detail, cart, and shipping estimate.
+- Phase 2: catalog, product detail, cart, and free nationwide delivery.
 - Phase 3: COD checkout, order creation, reservation, thank-you, WhatsApp, and email notifications.
 - Phase 4: Neon Auth admin workspace, product/media management, inventory, order operations, and settings.
 - Phase 5: analytics events, UTM attribution, Meta/GA verification, SEO, performance, accessibility, and deployment hardening.

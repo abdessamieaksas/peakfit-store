@@ -60,11 +60,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
           />
         </div>
         <div className="lg:sticky lg:top-28 lg:self-start">
-          {product.badge ? (
-            <p className="inline-flex rounded-full bg-accent px-3 py-1 text-xs font-extrabold text-on-accent">
-              {product.badge}
-            </p>
-          ) : null}
           <h1 className="display-title mt-5 text-[clamp(4rem,8vw,7rem)]">
             {product.name}
           </h1>

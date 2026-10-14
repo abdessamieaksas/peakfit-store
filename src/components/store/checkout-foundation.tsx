@@ -16,7 +16,6 @@ import {
   codOrderResultSchema,
   createCodOrderInputSchema,
 } from "@/features/checkout/domain/order";
-import { normalizeCity } from "@/features/shipping/domain/quote";
 import { formatMad } from "@/lib/money";
 
 type FieldName =
@@ -57,16 +56,7 @@ export function CheckoutFoundation() {
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
-  const { lines, total, shippingQuote, clearCart } = useCart();
-  const [deliveryCity, setDeliveryCity] = useState(
-    () => shippingQuote?.city ?? "",
-  );
-  const quoteMatchesDeliveryCity = Boolean(
-    shippingQuote &&
-      normalizeCity(deliveryCity) === normalizeCity(shippingQuote.city),
-  );
-  const estimatedTotal =
-    total + (quoteMatchesDeliveryCity ? shippingQuote?.fee ?? 0 : 0);
+  const { lines, total, clearCart } = useCart();
 
   function focusFirstError(nextErrors: Errors) {
     const firstError = Object.keys(nextErrors)[0] as FieldName | undefined;
@@ -197,6 +187,11 @@ export function CheckoutFoundation() {
         </p>
       </div>
 
+      <div className="flex items-center justify-between gap-4 border-b border-border pb-4 text-sm">
+        <span className="text-muted">Livraison</span>
+        <span className="font-extrabold text-success">Offerte partout au Maroc</span>
+      </div>
+
       {formError ? (
         <div
           className="border border-danger/35 bg-danger/10 p-4 text-sm"
@@ -236,8 +231,6 @@ export function CheckoutFoundation() {
           id="city"
           label="Ville"
           autoComplete="address-level2"
-          value={deliveryCity}
-          onChange={(event) => setDeliveryCity(event.target.value)}
           error={errors.city}
           required
         />
@@ -319,14 +312,11 @@ export function CheckoutFoundation() {
         ) : (
           <LockKeyhole aria-hidden="true" className="size-5" />
         )}
-        {isSubmitting ? "Envoi sécurisé…" : `Confirmer — ${formatMad(estimatedTotal)}`}
+        {isSubmitting ? "Envoi sécurisé…" : `Confirmer — ${formatMad(total)}`}
       </Button>
-      {quoteMatchesDeliveryCity && shippingQuote ? (
-        <p className="text-center text-xs leading-relaxed text-muted">
-          Total estimé pour {shippingQuote.city}, livraison incluse. Le montant
-          final est revérifié à la commande.
-        </p>
-      ) : null}
+      <p className="text-center text-xs leading-relaxed text-muted">
+        Livraison gratuite. Le total final est revérifié à la commande.
+      </p>
       <p className="text-center text-xs leading-relaxed text-muted">
         Aucun débit maintenant. Tu règles en espèces à la réception du colis.
       </p>

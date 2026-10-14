@@ -36,9 +36,11 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Table Selection | `DataTableSelection` | this contract | page / all-results | component + E2E |
-| Select/Listbox | shared shadcn/Radix `Select` | this contract + `DESIGN.md` | authored | keyboard + popup geometry |
+| Select/Listbox | native `<select>` for straightforward admin choices | this contract | native popup accepted | keyboard + browser smoke test |
 | Date | shared typed `DateField`; authored picker only if later required | this contract | typed / authored | locale + keyboard + E2E |
 | Form | shared `FormField` + Zod adapter | this contract | create / edit / checkout | validation E2E |
+| Authentication | one `/connexion` entry point; verified server session chooses destination | this contract + `lib/auth/access.ts` | customer / staff | OAuth + email sign-in and role routing |
+| Team roles | owner-only team manager; server capabilities are authoritative | `admin_profiles` / `admin_invitations` | owner / manager / fulfilment / viewer | invitation claim and role matrix |
 | Scrollbar | `src/app/globals.css` | `DESIGN.md` | geometry exceptions | computed style |
 | Toast | shared `Toaster` provider | this contract | success / warning / info / error | live-region test |
 | CRUD | feature service + route helpers | this contract + domain lifecycle | return / stay-inline | full-flow E2E |
@@ -71,11 +73,17 @@
 | Edit product | `Enregistrer` | stable busy button | product list | `Modifications enregistrées` | preserve form and retry | updated row/list heading | `PRODUCT.md` |
 | Submit COD order | `Confirmer la commande` | pessimistic busy state | thank-you route | reference + next steps | preserve non-sensitive checkout data | confirmation heading | `PRODUCT.md` |
 | Prepare WhatsApp confirmation | `Préparer la confirmation sur WhatsApp` on an order | no order mutation; open an encoded draft | WhatsApp app or WhatsApp Web | operator reviews and sends the itemized order summary | phone/email contact actions remain available | order detail remains open; operator records `CONTACTED` only after sending | `PRODUCT.md` |
+| Cancel/refuse COD order | `Annuler` / `Refuser` on an eligible order | confirmation dialog; stable busy action | same order detail | status history and inventory update are server-confirmed | keep dialog open for retry on transient failure; refresh on conflict | dialog returns focus to initiating action unless route changes | order lifecycle |
+| Confirm COD order | `Confirmer` after moving a new order to `Client contacté` | pessimistic version-checked mutation | same order detail | confirmation status and committed stock are server-confirmed | expired reservation/conflict explains and refreshes | status heading remains in view | `PRODUCT.md` |
 | Search | search field | stable list loading | same URL-backed route | result count region | retain query + retry | input or result heading | this contract |
 | Bulk order action | named status action | busy toolbar/dialog | same list | exact succeeded/failed counts | preserve failures | surviving row/list heading | order lifecycle |
 | Upload media | `Ajouter des images` | per-file progress | same product form | per-file status | keep valid files + retry failed file | upload summary | `PRODUCT.md` |
 | Cancel/back | `Annuler` / `Retour` | none | origin | none | unsaved dialog if dirty | originating context | this contract |
 | Archive product | `Archiver` | warning confirmation | product list | toast with restore when honest | dialog stays open on failure | next row/list heading | architecture |
+| Create product | `Créer le produit` | stable busy button; product and variants are inserted in one database transaction | product list | `Produit créé` | preserve fields, explain duplicate slug/SKU or unavailable image | list heading | `PRODUCT.md` |
+| Edit product | `Enregistrer les modifications` | stable busy button; variant structure stays fixed | product list | `Modifications enregistrées` | preserve values and retry | list heading | `PRODUCT.md` |
+| Adjust stock | `Ajuster` on an exact variant | pessimistic; stock update and immutable audit entry commit together | same product page | current/reserved/available quantities refresh | reject adjustments below reserved stock and require retry after refresh | same variant row | `PRODUCT.md` |
+| Add staff access | owner prepares an invite by verified e-mail | server-persisted invitation | team page | explicit note that no invitation e-mail is sent; staff use `/connexion` | keep entered values on validation/server error; owner can cancel pending access | form error or pending invitation row | role policy |
 | Hard-delete | unavailable in routine UI | n/a | n/a | n/a | privileged maintenance only | n/a | architecture |
 
 ## Navigation and responsive behavior
@@ -103,7 +111,9 @@
 - Checkout preserves non-sensitive data after recoverable failures. Admin drafts are not auto-saved in Phase 1.
 - Readable stale catalog content may remain visible during refresh; offline writes are not queued.
 - Safe reads use bounded exponential retry; mutations expose explicit retry and verify uncertain completion before re-submission.
-- Status mutations compare `updated_at`; conflicts refresh authoritative state and explain the change.
+- Order-status mutations compare the order `version`; conflicts refresh authoritative state and explain the change.
+- Cancellation and refusal are explicit confirmation actions. A refusal after shipment may restore stock only after the parcel is physically received back.
+- A new order cannot jump directly to confirmed; the operator records `Client contacté` after the customer has been reached.
 - Session expiry preserves non-sensitive admin input through re-authentication and returns to the interrupted route.
 - Stale reads are cancelled or ignored by request identity. A mutation's owner alone may clear its pending state.
 
@@ -118,8 +128,32 @@
 ## Permission and clipboard
 
 - Storefront routes are public. Admin navigation is hidden for non-admins; actions visible to read-only staff are disabled with an accessible explanation; forbidden direct routes return 403 UI.
+- Customers and staff use the same sign-in form and identity provider. A verified active staff profile routes to `/admin`; every other valid account routes to `/compte`. Legacy sign-in URLs redirect to `/connexion`.
+- `OWNER` is the super-admin role and is bootstrapped only through the server-side `ADMIN_EMAILS` allowlist. Owners can invite `MANAGER`, `FULFILMENT`, and `VIEWER`; an invite is claimed only after the matching e-mail is verified. Public signup and client-controlled fields cannot grant a role.
+- Only `OWNER` can manage team members; `MANAGER` can manage the catalogue and orders; `FULFILMENT` can process orders but not the catalogue or team; `VIEWER` is read-only. An owner cannot be created from a team invite or self-demoted through the team UI.
 - Server authorization, database role separation, and capability checks are mandatory; client hiding is never security.
+- Product metadata and stock management are restricted to OWNER and MANAGER. Fulfilment staff may manage orders but cannot edit the catalog; VIEWER is read-only. API routes enforce this independently of navigation visibility.
 - Sensitive values are masked/truncated, copied through a named control, and never repeated in a toast or telemetry.
+
+## Admin overview
+
+- “Nouvelles aujourd’hui” counts orders created since midnight in `Africa/Casablanca`.
+- “À confirmer” counts orders whose current status is `NEW` or `CONTACTED`.
+- “Commandes ce mois” counts orders created since the start of the current month in `Africa/Casablanca`.
+- “Valeur COD confirmée” sums this month’s orders in `CONFIRMED`, `PREPARING`, `SHIPPED`, or `DELIVERED`, excluding cancelled, refused, and returned orders. It is order value, not a cash-reconciliation figure; delivered revenue remains separately defined by the product contract.
+- Low-stock alerts use available units (`stock_quantity - reserved_quantity`) for active variants on active products. The visible threshold is three units or fewer, and the dashboard shows the eight lowest variants first.
+
+## Delivery pricing
+
+- Delivery is free throughout Morocco with no minimum order, and listed product prices remain unchanged.
+- Cart and checkout never ask shoppers to calculate or enter a city-based delivery quote; city is collected only as an address field.
+- COD order totals must remain equal to the catalog subtotal. The database migration `0005_peakfit_free_delivery` sets and constrains every shipping-zone threshold to zero so the order-creation function also calculates a zero delivery fee.
+
+## Storefront claims
+
+- Do not render `Nouveau` or `Best-seller` badges from seed tags; publish these claims only when backed by product release dates or actual sales data.
+- Do not show compare-at prices unless the reference price is verified and current.
+- Favorites must not be exposed as a control until saved state persists and has a usable destination.
 
 ## Verification
 
@@ -129,3 +163,12 @@
 - Visual regression: home day/night, product, cart, checkout, admin list, admin form, error, empty, and loading states as phases land.
 - CRUD evidence: product create/edit/archive and order status E2E tests before admin release.
 - Failure evidence: checkout duplicate, stock conflict, upload failure, session expiry, and stale status mutation tests before production launch.
+
+## Product management delivery scope
+
+- Admin catalog lists are server-paginated at 20 products per page with the page number in the URL.
+- Admin can create products with active category, MAD price, French copy, one or more colors/sizes, and a common initial quantity; up to 50 combinations are created atomically. SKU values are generated by the server.
+- Product edits cover listing content, price, category, selected existing primary image, publication, and featured placement. Variant structures remain fixed after creation to preserve historical order references.
+- Inventory changes are signed quantity deltas with a required reason. Each successful change is recorded with actor and before/after values; a guarded atomic update cannot take on-hand stock below reserved stock.
+- Product image choices are limited to image files already present under `public/images/products`. Uploading new media from the dashboard requires a separately configured storage provider; adding a file currently requires a code change and deployment.
+- Product admin form uses native selects and accepts the operating-system-owned popup behavior; primary media is a project-local file path.
