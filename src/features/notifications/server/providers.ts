@@ -8,7 +8,6 @@ import {
 import { getServerEnv } from "@/lib/config/env";
 import {
   renderOrderEmail,
-  whatsappTemplateParameters,
 } from "@/features/notifications/server/templates";
 
 type Fetch = typeof fetch;
@@ -76,56 +75,13 @@ export async function sendWhatsAppNotification(
   job: NotificationJob,
   fetcher: Fetch = fetch,
 ): Promise<DeliveryResult> {
-  const env = getServerEnv();
-  if (
-    !env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID ||
-    !env.WHATSAPP_ACCESS_TOKEN ||
-    !env.WHATSAPP_ORDER_TEMPLATE_NAME
-  ) {
-    throw new NotificationDeliveryError(
-      "CHANNEL_NOT_CONFIGURED",
-      true,
-      "WhatsApp delivery is not configured.",
-    );
-  }
-
-  const parameters = whatsappTemplateParameters(job).map((text) => ({
-    type: "text" as const,
-    text,
-  }));
-  const response = await fetcher(
-    `https://graph.facebook.com/${env.WHATSAPP_GRAPH_API_VERSION}/${env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: job.recipient.replace(/^\+/, ""),
-        type: "template",
-        template: {
-          name: env.WHATSAPP_ORDER_TEMPLATE_NAME,
-          language: { code: env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE },
-          components: [{ type: "body", parameters }],
-        },
-      }),
-    },
+  void job;
+  void fetcher;
+  throw new NotificationDeliveryError(
+    "CHANNEL_NOT_CONFIGURED",
+    true,
+    "Automatic WhatsApp delivery is disabled. Use the customer-assisted wa.me checkout.",
   );
-  const body = await readJson(response);
-  const providerMessageId = readProviderId(body);
-
-  if (!response.ok || !providerMessageId) {
-    throw new NotificationDeliveryError(
-      `WHATSAPP_${response.status}`,
-      response.status === 429 || response.status >= 500,
-      "WhatsApp rejected the notification.",
-    );
-  }
-
-  return { providerMessageId };
 }
 
 export function deliverNotification(job: NotificationJob, fetcher: Fetch = fetch) {

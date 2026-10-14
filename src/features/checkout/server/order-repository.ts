@@ -4,13 +4,14 @@ import { sql } from "drizzle-orm";
 
 import {
   CodOrderError,
-  parseCodOrderResult,
+  parseCodOrderPersistenceResult,
   type CodOrderErrorCode,
   type CodOrderResult,
   type CreateCodOrderCommand,
 } from "@/features/checkout/domain/order";
+import { buildCodOrderWhatsAppUrl } from "@/features/checkout/domain/whatsapp";
 import { fingerprintCodOrder } from "@/features/checkout/server/fingerprint";
-import { getServerEnv } from "@/lib/config/env";
+import { getServerEnv, publicEnv } from "@/lib/config/env";
 import { getDb } from "@/lib/db/client";
 
 const databaseErrorCodes = [
@@ -62,7 +63,60 @@ export async function createCodOrder(
     const payload = result.rows[0]?.result;
 
     if (!payload) throw new Error("The order function returned no result.");
-    return parseCodOrderResult(payload);
+    const order = parseCodOrderPersistenceResult(payload);
+    const savedOrder = await getDb().execute<{
+      customerName: string;
+      customerPhone: string;
+      city: string;
+      items: Array<{
+        productName: string;
+        variantTitle: string;
+        quantity: number;
+        unitPrice: number;
+        selectedOptions: Array<{ name: string; label: string }>;
+      }>;
+    }>(sql`
+      SELECT
+        saved.customer_name AS "customerName",
+        saved.customer_phone AS "customerPhone",
+        saved.city,
+        coalesce(
+          json_agg(
+            json_build_object(
+              'productName', item.product_name,
+              'variantTitle', item.variant_title,
+              'selectedOptions', item.selected_options,
+              'quantity', item.quantity,
+              'unitPrice', item.unit_price
+            ) ORDER BY item.created_at, item.id
+          ) FILTER (WHERE item.id IS NOT NULL),
+          '[]'::json
+        ) AS items
+      FROM public.orders AS saved
+      LEFT JOIN public.order_items AS item ON item.order_id = saved.id
+      WHERE saved.reference = ${order.reference}
+      GROUP BY saved.id
+    `);
+    const canonical = savedOrder.rows[0];
+
+    if (!canonical || canonical.items.length === 0) {
+      throw new Error("The saved order details could not be loaded.");
+    }
+
+    return {
+      ...order,
+      whatsappUrl: buildCodOrderWhatsAppUrl(
+        {
+          reference: order.reference,
+          customerName: canonical.customerName,
+          customerPhone: canonical.customerPhone,
+          city: canonical.city,
+          items: canonical.items,
+          total: order.total,
+        },
+        publicEnv.NEXT_PUBLIC_WHATSAPP_NUMBER,
+      ),
+    };
   } catch (error) {
     translateDatabaseError(error);
   }

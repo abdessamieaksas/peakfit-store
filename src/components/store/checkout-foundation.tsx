@@ -120,6 +120,8 @@ export function CheckoutFoundation() {
     setErrors({});
     setFormError("");
     setIsSubmitting(true);
+    const whatsappWindow = window.open("about:blank", "_blank");
+    if (whatsappWindow) whatsappWindow.opener = null;
 
     try {
       const response = await fetch("/api/orders", {
@@ -130,6 +132,7 @@ export function CheckoutFoundation() {
       const body: unknown = await response.json().catch(() => null);
 
       if (!response.ok) {
+        whatsappWindow?.close();
         const apiError = body as OrderApiError | null;
         const nextErrors: Errors = {};
         for (const issue of apiError?.error?.issues ?? []) {
@@ -151,16 +154,21 @@ export function CheckoutFoundation() {
         (body as { order?: unknown } | null)?.order,
       );
       if (!result.success) {
+        whatsappWindow?.close();
         setFormError(
           "La confirmation reçue est incomplète. Réessaie dans un instant.",
         );
         return;
       }
 
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.replace(result.data.whatsappUrl);
+      }
       saveOrderConfirmation(result.data);
       clearCart();
       router.push("/commande/merci");
     } catch {
+      whatsappWindow?.close();
       setFormError(
         "Connexion interrompue. Ta commande n’est pas perdue : réessaie avec le même bouton.",
       );
@@ -180,10 +188,10 @@ export function CheckoutFoundation() {
       noValidate
     >
       <div className="border border-accent-strong/30 bg-accent/10 p-4 text-sm">
-        <p className="font-extrabold">Confirmation automatique</p>
+        <p className="font-extrabold">Commande enregistrée avant WhatsApp</p>
         <p className="mt-1 leading-relaxed text-muted">
-          Envoie ta commande ici. Peakfit la reçoit immédiatement et te contacte
-          ensuite pour confirmer la livraison — aucun message à envoyer toi-même.
+          Après l’enregistrement sécurisé, WhatsApp s’ouvrira avec le récapitulatif.
+          Tu pourras vérifier les détails puis appuyer toi-même sur « Envoyer ».
         </p>
       </div>
 

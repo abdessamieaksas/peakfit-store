@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const cartLine = {
   variantId: "11111111-1111-4111-8111-111111111111",
@@ -21,7 +21,10 @@ test.beforeEach(async ({ page }) => {
   }, cartLine);
 });
 
-test("submits a COD order without making the shopper send a message", async ({ page }) => {
+test("saves a COD order before opening its customer-assisted WhatsApp draft", async ({ page }) => {
+  await page.context().route("https://wa.me/**", async (route) =>
+    route.fulfill({ status: 200, body: "WhatsApp draft intercepted for test" }),
+  );
   await page.route("**/api/orders", async (route) => {
     const request = route.request();
     const body = request.postDataJSON();
@@ -43,6 +46,8 @@ test("submits a COD order without making the shopper send a message", async ({ p
           estimatedDaysMax: 3,
           reservationExpiresAt: "2026-09-11T14:00:00.000Z",
           duplicate: false,
+          whatsappUrl:
+            "https://wa.me/212719427447?text=PF-260910-TEST1234%20Compression%20Core%20Noir",
         },
       }),
     });
@@ -50,7 +55,7 @@ test("submits a COD order without making the shopper send a message", async ({ p
 
   await page.goto("/commande");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("peakfit-cart-v2"))).toContain(cartLine.variantId);
-  await expect(page.getByText("aucun message à envoyer toi-même", { exact: false })).toBeVisible();
+  await expect(page.getByText("appuyer toi-même sur « Envoyer »", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: /Confirmer — 349/ })).toBeVisible();
 
   await page.getByLabel("Nom complet").fill("Samir Test");
@@ -59,13 +64,47 @@ test("submits a COD order without making the shopper send a message", async ({ p
   await page.getByLabel("Ville").fill("Casablanca");
   await page.getByLabel("Adresse de livraison").fill("12 rue Atlas");
   await page.getByLabel(/J’accepte/).check();
+  const popupPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: /^Confirmer/ }).click();
+  const whatsapp = await popupPromise;
 
+  await expect(whatsapp).toHaveURL(/https:\/\/wa\.me\/212719427447\?text=/);
   await expect(page).toHaveURL(/\/commande\/merci$/);
   await expect(page.getByText("PF-260910-TEST1234")).toBeVisible();
   await expect(page.getByText("349 MAD")).toBeVisible();
-  await expect(page.getByText("Tu n’as aucun message à envoyer.")).toBeVisible();
+  await expect(page.getByText("Aucun message n’est envoyé automatiquement.")).toBeVisible();
+  const continueLink = page.getByRole("link", { name: "Continuer vers WhatsApp" });
+  await expect(continueLink).toHaveAttribute("href", /wa\.me\/212719427447/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("peakfit-cart-v2"))).toBe("[]");
+});
+
+test("keeps checkout recoverable and does not open WhatsApp when saving fails", async ({ page }) => {
+  await page.route("**/api/orders", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: { code: "SERVICE_UNAVAILABLE", message: "Réessaie dans un instant." },
+      }),
+    }),
+  );
+  await page.goto("/commande");
+  await page.getByLabel("Nom complet").fill("Samir Test");
+  await page.getByLabel("Téléphone", { exact: true }).fill("06 12 34 56 78");
+  await page.getByLabel("Ville").fill("Casablanca");
+  await page.getByLabel("Adresse de livraison").fill("12 rue Atlas");
+  await page.getByLabel(/J’accepte/).check();
+
+  const popups: Page[] = [];
+  page.on("popup", (popup) => popups.push(popup));
+  await page.getByRole("button", { name: /^Confirmer/ }).click();
+
+  await expect(page.getByText("Réessaie dans un instant.")).toBeVisible();
+  await expect(page.getByLabel("Nom complet")).toHaveValue("Samir Test");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("peakfit-cart-v2"))).toContain(cartLine.variantId);
+  expect(popups).toHaveLength(1);
+  await expect.poll(() => popups[0]?.isClosed()).toBe(true);
+  await expect(page).toHaveURL(/\/commande$/);
 });
 
 test("keeps the checkout form and focuses the first invalid field", async ({ page }) => {

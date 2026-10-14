@@ -4,7 +4,7 @@ import {
   CodOrderError,
   codOrderResultSchema,
   createCodOrderInputSchema,
-  parseCodOrderResult,
+  parseCodOrderPersistenceResult,
 } from "@/features/checkout/domain/order";
 import { fingerprintCodOrder } from "@/features/checkout/server/fingerprint";
 import { toPublicCodOrderError } from "@/features/checkout/server/public-error";
@@ -82,13 +82,14 @@ describe("COD order submission", () => {
         estimatedDaysMax: 2,
         reservationExpiresAt: "2026-09-10T12:00:00.000Z",
         duplicate: true,
+        whatsappUrl: "https://wa.me/212719427447?text=hello",
       }).status,
     ).toBe("CONTACTED");
   });
 
   it("normalizes the timestamp format returned by PostgreSQL JSON", () => {
     expect(
-      parseCodOrderResult({
+      parseCodOrderPersistenceResult({
         reference: "PF-260930-ABC12345",
         status: "NEW",
         currency: "MAD",

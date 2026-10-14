@@ -119,7 +119,7 @@ export const createCodOrderInputSchema = z
     });
   });
 
-export const codOrderResultSchema = z
+export const codOrderPersistenceResultSchema = z
   .object({
     reference: z.string().min(1).max(32),
     status: z.enum(ORDER_STATUSES),
@@ -144,6 +144,14 @@ export const codOrderResultSchema = z
       path: ["estimatedDaysMax"],
     },
   );
+
+export const codOrderResultSchema = codOrderPersistenceResultSchema
+  .extend({
+    whatsappUrl: z.url().refine((value) => {
+      const url = new URL(value);
+      return url.protocol === "https:" && url.hostname === "wa.me";
+    }, "Lien WhatsApp invalide."),
+  });
 
 /**
  * PostgreSQL JSON timestamps commonly use an explicit `+00:00` offset, while
@@ -173,9 +181,35 @@ export function parseCodOrderResult(value: unknown): CodOrderResult {
   });
 }
 
+export function parseCodOrderPersistenceResult(
+  value: unknown,
+): CodOrderPersistenceResult {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return codOrderPersistenceResultSchema.parse(value);
+  }
+
+  const result = value as Record<string, unknown>;
+  if (typeof result.reservationExpiresAt !== "string") {
+    return codOrderPersistenceResultSchema.parse(value);
+  }
+
+  const reservationExpiresAt = new Date(result.reservationExpiresAt);
+  if (Number.isNaN(reservationExpiresAt.getTime())) {
+    return codOrderPersistenceResultSchema.parse(value);
+  }
+
+  return codOrderPersistenceResultSchema.parse({
+    ...value,
+    reservationExpiresAt: reservationExpiresAt.toISOString(),
+  });
+}
+
 export type CreateCodOrderInput = z.input<typeof createCodOrderInputSchema>;
 export type CreateCodOrderCommand = z.output<typeof createCodOrderInputSchema>;
 export type CodOrderResult = z.output<typeof codOrderResultSchema>;
+export type CodOrderPersistenceResult = z.output<
+  typeof codOrderPersistenceResultSchema
+>;
 
 export type CodOrderErrorCode =
   | "INVALID_REQUEST"

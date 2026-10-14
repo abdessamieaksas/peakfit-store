@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, PackageCheck, PhoneCall } from "lucide-react";
+import { CheckCircle2, MessageCircle, PackageCheck } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
 
@@ -58,11 +58,12 @@ export function OrderConfirmation() {
           Commande enregistrée
         </p>
         <h1 className="display-title mt-3 text-[clamp(3.5rem,10vw,7rem)]">
-          C’est confirmé
+          C’est enregistré
         </h1>
         <p className="mt-5 max-w-xl text-base leading-relaxed text-muted">
-          Merci. L’équipe Peakfit a reçu ta commande et te contactera pour
-          vérifier la livraison. Tu n’as aucun message à envoyer.
+          Merci. Ta commande est enregistrée dans notre système. WhatsApp peut
+          s’ouvrir avec son récapitulatif ; vérifie-le et appuie sur « Envoyer »
+          pour nous le transmettre. Aucun message n’est envoyé automatiquement.
         </p>
       </div>
 
@@ -79,11 +80,20 @@ export function OrderConfirmation() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <div className="border border-border bg-surface p-5">
-          <PhoneCall aria-hidden="true" className="size-6 text-accent-strong" />
-          <p className="mt-4 font-extrabold">1. Confirmation Peakfit</p>
+          <MessageCircle aria-hidden="true" className="size-6 text-accent-strong" />
+          <p className="mt-4 font-extrabold">1. Envoyer le récapitulatif</p>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Nous te contactons au numéro fourni pour confirmer la commande.
+            Le message est préparé gratuitement dans WhatsApp. Il ne partira
+            qu’après ton appui sur « Envoyer ».
           </p>
+          <a
+            href={order.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: "accent", size: "lg" }), "mt-4 w-full")}
+          >
+            Continuer vers WhatsApp
+          </a>
         </div>
         <div className="border border-border bg-surface p-5">
           <PackageCheck aria-hidden="true" className="size-6 text-accent-strong" />

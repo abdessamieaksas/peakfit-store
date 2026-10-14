@@ -77,16 +77,18 @@ describe("notification providers", () => {
     );
   });
 
-  it("defers WhatsApp cleanly until business credentials are configured", async () => {
-    delete process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID;
-    delete process.env.WHATSAPP_ACCESS_TOKEN;
-    delete process.env.WHATSAPP_ORDER_TEMPLATE_NAME;
+  it("never calls the paid WhatsApp API, even if legacy credentials exist", async () => {
+    process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID = "legacy-id";
+    process.env.WHATSAPP_ACCESS_TOKEN = "legacy-token";
+    process.env.WHATSAPP_ORDER_TEMPLATE_NAME = "legacy-template";
+    const fetcher = vi.fn<typeof fetch>();
 
     await expect(
-      sendWhatsAppNotification({ ...job, channel: "WHATSAPP" }),
+      sendWhatsAppNotification({ ...job, channel: "WHATSAPP" }, fetcher),
     ).rejects.toMatchObject<Partial<NotificationDeliveryError>>({
       code: "CHANNEL_NOT_CONFIGURED",
       retryable: true,
     });
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });
