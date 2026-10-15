@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+const localProductImage = z.string().regex(/^\/images\/products\/[a-z0-9][a-z0-9._-]*\.(?:webp|png|jpe?g)$/i);
+const blobProductImage = z.url().refine((value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname) &&
+      /^\/products\/[a-f0-9-]+\.(?:webp|png|jpe?g)$/i.test(url.pathname) &&
+      !url.search && !url.hash;
+  } catch {
+    return false;
+  }
+}, "Choisis une image du catalogue Peakfit.");
+const productImage = z.union([localProductImage, blobProductImage]);
+
 const commaSeparatedLabels = (label: string, maximum: number) =>
   z
     .string()
@@ -30,16 +44,22 @@ export const adminProductSchema = z.object({
   priceDh: z.coerce.number({ error: "Saisis un prix en DH." }).finite("Saisis un prix valide.").positive("Le prix doit être supérieur à zéro.").max(100_000, "Le prix dépasse le maximum autorisé."),
   status: z.enum(["DRAFT", "ACTIVE"]),
   featured: z.boolean(),
-  image: z.string().trim().regex(/^\/images\/products\/[a-z0-9][a-z0-9._-]*\.(?:webp|png|jpe?g)$/i, "Choisis une image produit du catalogue du site."),
+  image: productImage,
+  images: z.array(productImage).min(1, "Ajoute au moins une image.").max(8, "Un produit peut avoir 8 images maximum.").optional(),
   imageAlt: z.string().trim().min(5, "Le texte alternatif doit contenir au moins 5 caractères.").max(240, "Le texte alternatif est trop long."),
   colors: commaSeparatedLabels("couleur", 12),
   sizes: commaSeparatedLabels("taille", 12),
   initialStock: z.coerce.number({ error: "Saisis un stock initial valide." }).int("Le stock doit être un nombre entier.").min(0, "Le stock ne peut pas être négatif.").max(100_000, "Le stock dépasse le maximum autorisé."),
   benefits: z.string().trim().max(1200, "Les points forts sont trop longs."),
-}).refine((value) => value.colors.length * value.sizes.length <= 50, {
-  message: "Réduis les combinaisons : un produit peut avoir 50 variantes au maximum.",
-  path: ["sizes"],
-});
+}).transform((value) => ({ ...value, images: value.images ?? [value.image] }))
+  .refine((value) => value.images.includes(value.image), {
+    message: "Choisis l’image principale dans la galerie.",
+    path: ["image"],
+  })
+  .refine((value) => value.colors.length * value.sizes.length <= 50, {
+    message: "Réduis les combinaisons : un produit peut avoir 50 variantes au maximum.",
+    path: ["sizes"],
+  });
 
 export type AdminProductInput = z.infer<typeof adminProductSchema>;
 

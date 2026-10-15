@@ -25,6 +25,13 @@ export type CatalogVariant = {
   optionValues: Record<string, string>;
 };
 
+export type CatalogProductImage = {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+};
+
 export type CatalogProduct = {
   id: string;
   slug: string;
@@ -35,6 +42,7 @@ export type CatalogProduct = {
   price: number;
   compareAtPrice?: number;
   image: string;
+  images?: CatalogProductImage[];
   imageWidth: number;
   imageHeight: number;
   alt: string;

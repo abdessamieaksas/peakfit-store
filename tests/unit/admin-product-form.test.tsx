@@ -20,7 +20,7 @@ describe("admin product form", () => {
 
   it("keeps the operator on the form and focuses the first invalid field", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
-    render(<AdminProductForm categories={categories} images={images} />);
+    render(<AdminProductForm categories={categories} images={images} canUploadImages={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Créer le produit" }));
     expect(fetchMock).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/nom doit contenir/i);
@@ -29,7 +29,7 @@ describe("admin product form", () => {
 
   it("creates a product and returns to the product list after success", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ data: { id: productId } }), { status: 201, headers: { "Content-Type": "application/json" } }));
-    render(<AdminProductForm categories={categories} images={images} />);
+    render(<AdminProductForm categories={categories} images={images} canUploadImages={false} />);
     fireEvent.change(screen.getByLabelText("Nom du produit"), { target: { value: "Core Compression" } });
     fireEvent.change(screen.getByLabelText("Résumé"), { target: { value: "Un haut technique, ajusté et respirant." } });
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Une pièce de performance pensée pour tes entraînements intenses." } });
@@ -40,6 +40,7 @@ describe("admin product form", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
       slug: "core-compression", categoryId: categories[0]?.id, colors: ["Noir"], sizes: ["S", "M", "L", "XL"], priceDh: 259,
+      images: [images[0]],
     });
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith("/admin/produits"));
     expect(toastMock.success).toHaveBeenCalledWith("Produit créé.");

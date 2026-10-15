@@ -24,9 +24,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: { id } });
   } catch (error) {
     const code = error instanceof Error ? error.message : "SERVICE_UNAVAILABLE";
-    if (code === "INVALID_IMAGE_PATH" || code === "ENOENT" || code === "UNSUPPORTED_IMAGE") {
+    if (["INVALID_IMAGE_PATH", "ENOENT", "UNSUPPORTED_IMAGE", "IMAGE_NOT_AVAILABLE", "INVALID_IMAGE_SIZE", "INVALID_IMAGE_DIMENSIONS"].includes(code)) {
       return NextResponse.json({ error: { code: "IMAGE_NOT_AVAILABLE" } }, { status: 400 });
     }
+    if (code === "IMAGE_STORAGE_NOT_CONFIGURED") return NextResponse.json({ error: { code } }, { status: 503 });
     if (code.includes("products_slug_uq")) return NextResponse.json({ error: { code: "CATALOG_CONFLICT" } }, { status: 409 });
     console.error("Admin product update failed", error);
     return NextResponse.json({ error: { code: "SERVICE_UNAVAILABLE" } }, { status: 503 });

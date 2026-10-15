@@ -1,10 +1,10 @@
 import { ArrowLeft, Check, PackageCheck, RefreshCcw, Truck } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProductPurchasePanel } from "@/components/store/product-purchase-panel";
+import { ProductMediaGallery } from "@/components/store/product-media-gallery";
 import {
   sampleProducts,
 } from "@/features/catalog/data/sample-catalog";
@@ -38,6 +38,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const product = await getCatalogProductBySlug(slug);
 
   if (!product) notFound();
+  const productImages = product.images?.length ? product.images : [{ url: product.image, width: product.imageWidth, height: product.imageHeight, alt: product.alt }];
 
   return (
     <div className="page-shell py-8 sm:py-12">
@@ -49,16 +50,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         Retour au shop
       </Link>
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] lg:gap-14">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-surface-raised">
-          <Image
-            src={product.image}
-            alt={product.alt}
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 58vw"
-            className="object-cover"
-          />
-        </div>
+        <ProductMediaGallery images={productImages} />
         <div className="lg:sticky lg:top-28 lg:self-start">
           <h1 className="display-title mt-5 text-[clamp(4rem,8vw,7rem)]">
             {product.name}

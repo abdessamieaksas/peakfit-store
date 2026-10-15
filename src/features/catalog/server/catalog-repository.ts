@@ -77,6 +77,23 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
 
   if (!rows.length) return [];
 
+  const galleryRows = await db
+    .select({
+      productId: productImages.productId,
+      url: productImages.publicUrl,
+      width: productImages.width,
+      height: productImages.height,
+      alt: productImages.altFr,
+      position: productImages.position,
+    })
+    .from(productImages)
+    .where(inArray(productImages.productId, rows.map((row) => row.id)))
+    .orderBy(asc(productImages.position));
+  const galleryByProduct = new Map<string, typeof galleryRows>();
+  for (const image of galleryRows) {
+    galleryByProduct.set(image.productId, [...(galleryByProduct.get(image.productId) ?? []), image]);
+  }
+
   const optionRows = await db
     .select({
       productId: productOptions.productId,
@@ -208,6 +225,7 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
       price: row.price,
       compareAtPrice: row.compareAtPrice ?? undefined,
       image: row.image,
+      images: (galleryByProduct.get(row.id) ?? []).map(({ url, width, height, alt }) => ({ url, width, height, alt })),
       imageWidth: row.imageWidth,
       imageHeight: row.imageHeight,
       alt: row.alt,

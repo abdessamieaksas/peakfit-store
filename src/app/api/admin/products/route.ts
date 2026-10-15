@@ -21,9 +21,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ data: { id } }, { status: 201 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "SERVICE_UNAVAILABLE";
-    if (code === "INVALID_IMAGE_PATH" || code === "ENOENT" || code === "UNSUPPORTED_IMAGE") {
+    if (["INVALID_IMAGE_PATH", "ENOENT", "UNSUPPORTED_IMAGE", "IMAGE_NOT_AVAILABLE", "INVALID_IMAGE_SIZE", "INVALID_IMAGE_DIMENSIONS"].includes(code)) {
       return NextResponse.json({ error: { code: "IMAGE_NOT_AVAILABLE" } }, { status: 400 });
     }
+    if (code === "IMAGE_STORAGE_NOT_CONFIGURED") return NextResponse.json({ error: { code } }, { status: 503 });
     if (code.includes("products_slug_uq") || code.includes("product_variants_sku_uq")) {
       return NextResponse.json({ error: { code: "CATALOG_CONFLICT" } }, { status: 409 });
     }

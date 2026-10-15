@@ -1,17 +1,19 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
-import path from "node:path";
 
 import { asc, eq, sql } from "drizzle-orm";
 
 import type { AdminProductInput } from "@/features/catalog/domain/admin-product";
 import { getDb, getNeonClient } from "@/lib/db/client";
 import { categories } from "@/lib/db/schema";
+import { listLocalProductImages, resolveProductImages } from "@/features/catalog/server/product-image-storage";
 
-const productsDirectory = path.join(process.cwd(), "public", "images", "products");
-const allowedImageName = /^[a-z0-9][a-z0-9._-]*\.(?:webp|png|jpe?g)$/i;
+export { listLocalProductImages };
+
+function primaryFirst<T extends { url: string }>(images: T[], primaryUrl: string) {
+  return [...images].sort((a, b) => Number(b.url === primaryUrl) - Number(a.url === primaryUrl));
+}
 
 export type AdminProductRow = {
   id: string;
@@ -33,6 +35,16 @@ export type AdminProductDetail = AdminProductRow & {
   description: string;
   imageAlt: string;
   benefits: string[];
+  images: Array<{
+    url: string;
+    storageProvider: string;
+    storageKey: string;
+    width: number;
+    height: number;
+    alt: string;
+    position: number;
+    isPrimary: boolean;
+  }>;
   colors: string[];
   sizes: string[];
   variants: Array<{
@@ -44,72 +56,6 @@ export type AdminProductDetail = AdminProductRow & {
     available: number;
   }>;
 };
-
-function localImagePath(value: string) {
-  const fileName = value.replace(/^\/images\/products\//, "");
-  if (!allowedImageName.test(fileName)) throw new Error("INVALID_IMAGE_PATH");
-  return { fileName, absolutePath: path.join(productsDirectory, fileName) };
-}
-
-function imageDimensions(buffer: Buffer) {
-  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") {
-    const kind = buffer.toString("ascii", 12, 16);
-    if (kind === "VP8X" && buffer.length >= 30) {
-      return { width: 1 + buffer.readUIntLE(24, 3), height: 1 + buffer.readUIntLE(27, 3) };
-    }
-    if (kind === "VP8L" && buffer.length >= 25) {
-      const b0 = buffer[21]!;
-      const b1 = buffer[22]!;
-      const b2 = buffer[23]!;
-      const b3 = buffer[24]!;
-      return {
-        width: 1 + b0 + ((b1 & 0x3f) << 8),
-        height: 1 + ((b1 & 0xc0) >> 6) + (b2 << 2) + ((b3 & 0x0f) << 10),
-      };
-    }
-    if (kind === "VP8 " && buffer.length >= 30) {
-      for (let index = 20; index + 9 < buffer.length; index += 1) {
-        if (buffer[index] === 0x9d && buffer[index + 1] === 0x01 && buffer[index + 2] === 0x2a) {
-          return {
-            width: buffer.readUInt16LE(index + 3) & 0x3fff,
-            height: buffer.readUInt16LE(index + 5) & 0x3fff,
-          };
-        }
-      }
-    }
-  }
-  if (buffer.toString("ascii", 1, 4) === "PNG" && buffer.length >= 24) {
-    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
-  }
-  if (buffer[0] === 0xff && buffer[1] === 0xd8) {
-    let offset = 2;
-    while (offset + 9 < buffer.length) {
-      if (buffer[offset] !== 0xff) break;
-      const marker = buffer[offset + 1]!;
-      const length = buffer.readUInt16BE(offset + 2);
-      if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker)) {
-        return { height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) };
-      }
-      offset += 2 + length;
-    }
-  }
-  throw new Error("UNSUPPORTED_IMAGE");
-}
-
-export async function listLocalProductImages() {
-  const entries = await readdir(productsDirectory, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile() && allowedImageName.test(entry.name))
-    .map((entry) => `/images/products/${entry.name}`)
-    .sort((a, b) => a.localeCompare(b, "fr"));
-}
-
-async function inspectLocalImage(url: string) {
-  const { fileName, absolutePath } = localImagePath(url);
-  const buffer = await readFile(/*turbopackIgnore: true*/ absolutePath);
-  const dimensions = imageDimensions(buffer);
-  return { storageKey: fileName, ...dimensions };
-}
 
 export async function listAdminProductCategories() {
   return getDb()
@@ -208,7 +154,14 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
     if (row.optionName === "color") colors.add(row.valueLabel);
     if (row.optionName === "size") sizes.add(row.valueLabel);
   }
-  return { ...product, variants: [...variants.values()], colors: [...colors], sizes: [...sizes] };
+  const imageRows = await db.execute<AdminProductDetail["images"][number]>(sql`
+    SELECT public_url AS url, storage_provider AS "storageProvider", storage_key AS "storageKey",
+      width, height, alt_fr AS alt, position, is_primary AS "isPrimary"
+    FROM public.product_images
+    WHERE product_id = ${productId}::uuid
+    ORDER BY position ASC
+  `);
+  return { ...product, images: imageRows.rows, variants: [...variants.values()], colors: [...colors], sizes: [...sizes] };
 }
 
 export async function listAdminStockHistory(productId: string) {
@@ -237,7 +190,7 @@ export async function listAdminStockHistory(productId: string) {
 }
 
 export async function createAdminProduct(input: AdminProductInput, actorAdminId: string) {
-  const image = await inspectLocalImage(input.image);
+  const images = primaryFirst(await resolveProductImages(input.images), input.image);
   const colorOptionId = randomUUID();
   const sizeOptionId = randomUUID();
   const colorValues = input.colors.map((label, position) => ({ id: randomUUID(), label, position }));
@@ -261,9 +214,9 @@ export async function createAdminProduct(input: AdminProductInput, actorAdminId:
     getNeonClient()`INSERT INTO public.products
       (id, category_id, slug, name_fr, summary_fr, description_fr, benefits, base_price, status, is_featured, published_at)
       VALUES (${productId}::uuid, ${input.categoryId}::uuid, ${input.slug}, ${input.name}, ${input.summary}, ${input.description}, ${JSON.stringify(benefits)}::jsonb, ${Math.round(input.priceDh * 100)}, ${input.status}::public.product_status, ${input.featured}, CASE WHEN ${input.status} = 'ACTIVE' THEN now() ELSE NULL END)`,
-    getNeonClient()`INSERT INTO public.product_images
+    ...images.map((image, position) => getNeonClient()`INSERT INTO public.product_images
       (product_id, storage_provider, storage_key, public_url, alt_fr, width, height, position, is_primary)
-      VALUES (${productId}::uuid, 'app', ${image.storageKey}, ${input.image}, ${input.imageAlt}, ${image.width}, ${image.height}, 0, true)`,
+      VALUES (${productId}::uuid, ${image.storageProvider}, ${image.storageKey}, ${image.url}, ${input.imageAlt}, ${image.width}, ${image.height}, ${position}, ${image.url === input.image})`),
     getNeonClient()`INSERT INTO public.product_options (id, product_id, code, name_fr, position)
       VALUES (${colorOptionId}::uuid, ${productId}::uuid, 'color', 'Couleur', 0), (${sizeOptionId}::uuid, ${productId}::uuid, 'size', 'Taille', 1)`,
     ...colorValues.map((value) => getNeonClient()`INSERT INTO public.product_option_values (id, option_id, code, label_fr, swatch, position)
@@ -298,7 +251,7 @@ function knownSwatch(value: string) {
 }
 
 export async function updateAdminProduct(productId: string, input: AdminProductInput) {
-  const image = await inspectLocalImage(input.image);
+  const images = primaryFirst(await resolveProductImages(input.images), input.image);
   const benefits = input.benefits.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 8);
   await getNeonClient().transaction([
     getNeonClient()`UPDATE public.products SET category_id = ${input.categoryId}::uuid,
@@ -308,9 +261,10 @@ export async function updateAdminProduct(productId: string, input: AdminProductI
       is_featured = ${input.featured},
       published_at = CASE WHEN ${input.status} = 'ACTIVE' THEN coalesce(published_at, now()) ELSE NULL END,
       updated_at = now() WHERE id = ${productId}::uuid`,
-    getNeonClient()`UPDATE public.product_images SET storage_key = ${image.storageKey},
-      public_url = ${input.image}, alt_fr = ${input.imageAlt}, width = ${image.width}, height = ${image.height}
-      WHERE product_id = ${productId}::uuid AND is_primary = true`,
+    getNeonClient()`DELETE FROM public.product_images WHERE product_id = ${productId}::uuid`,
+    ...images.map((image, position) => getNeonClient()`INSERT INTO public.product_images
+      (product_id, storage_provider, storage_key, public_url, alt_fr, width, height, position, is_primary)
+      VALUES (${productId}::uuid, ${image.storageProvider}, ${image.storageKey}, ${image.url}, ${input.imageAlt}, ${image.width}, ${image.height}, ${position}, ${image.url === input.image})`),
   ]);
 }
 

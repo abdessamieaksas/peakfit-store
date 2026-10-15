@@ -8,6 +8,7 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminProductForm, AdminVariantStockForm } from "@/components/admin/admin-product-form";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminProduct, listAdminProductCategories, listAdminStockHistory, listLocalProductImages } from "@/features/catalog/server/admin-product-repository";
+import { isProductImageStorageReady } from "@/features/catalog/server/product-image-storage";
 import { canManageCatalog, requireAdmin } from "@/lib/auth/access";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,7 @@ export default async function AdminProductDetailPage({ params }: { params: Promi
       <div className="mt-5 border-b border-border pb-7"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-accent-strong">Catalogue · {product.category}</p><h1 className="display-title mt-2 text-[clamp(3.6rem,9vw,6.5rem)]">{product.name}</h1><p className="mt-3 text-sm text-muted">{product.availableStock} disponible(s) après réservations · {product.totalStock} en stock</p></div>
       <>
         {product.status === "ARCHIVED" ? <section role="status" className="mt-8 border-l-2 border-warning bg-surface p-5"><h2 className="font-bold">Ce produit est archivé</h2><p className="mt-1 text-sm text-muted">La restauration n’est pas encore disponible. La fiche et son stock restent en lecture seule.</p></section> : <>
-          <AdminProductForm categories={categories} images={images} product={product} />
+          <AdminProductForm categories={categories} images={images} product={product} canUploadImages={isProductImageStorageReady()} />
           <section aria-labelledby="variant-stock-heading" className="mt-12 border-t border-border pt-8">
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-accent-strong">Inventaire</p><h2 id="variant-stock-heading" className="mt-2 font-display text-4xl font-extrabold uppercase">Stock par variante</h2><p className="mt-2 text-sm text-muted">Les quantités réservées pour des commandes existantes ne peuvent pas être retirées du stock.</p>
           {product.variants.length ? <ul className="mt-6 divide-y divide-border border-y border-border">{product.variants.map((variant) => <li key={variant.id} className="grid gap-4 py-5 lg:grid-cols-[minmax(12rem,1fr)_minmax(20rem,1.4fr)] lg:items-center">

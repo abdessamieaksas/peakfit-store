@@ -38,6 +38,16 @@ describe("admin product input", () => {
     expect(adminProductSchema.safeParse({ ...validProduct, slug: "T-shirt Compression" }).success).toBe(false);
   });
 
+  it("accepts Vercel Blob catalog images and defaults legacy product payloads to one image", () => {
+    const blobImage = "https://store-123.public.blob.vercel-storage.com/products/123e4567-e89b-12d3-a456-426614174000.webp";
+    const parsed = adminProductSchema.parse({ ...validProduct, image: blobImage, images: [blobImage] });
+    expect(parsed.images).toEqual([blobImage]);
+    expect(adminProductSchema.parse(validProduct).images).toEqual([validProduct.image]);
+    expect(adminProductSchema.safeParse({ ...validProduct, image: "https://example.com/products/123.webp", images: ["https://example.com/products/123.webp"] }).success).toBe(false);
+    expect(adminProductSchema.safeParse({ ...validProduct, images: [validProduct.image, "/images/products/kinetic-graphic-tee.webp"], image: "/images/products/compression-core-black.webp" }).success).toBe(true);
+    expect(adminProductSchema.safeParse({ ...validProduct, images: ["/images/products/compression-core-black.webp", ...Array(8).fill("/images/products/kinetic-graphic-tee.webp")] }).success).toBe(false);
+  });
+
   it("caps generated variant combinations to 50", () => {
     expect(adminProductSchema.safeParse({ ...validProduct, colors: "Noir, Blanc, Lavande, Rouge, Bleu", sizes: "XS, S, M, L, XL, XXL, 3XL, 4XL, 5XL, 6XL, 7XL, 8XL" }).success).toBe(false);
   });
