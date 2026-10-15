@@ -2,6 +2,7 @@ import "@fontsource-variable/manrope";
 import "@fontsource/barlow-condensed/600.css";
 import "@fontsource/barlow-condensed/700.css";
 import "@fontsource/barlow-condensed/800.css";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 
 import { AppProviders } from "@/components/providers/app-providers";
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="fr-MA" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
         <AppProviders>{children}</AppProviders>
+        <Analytics />
       </body>
     </html>
   );
