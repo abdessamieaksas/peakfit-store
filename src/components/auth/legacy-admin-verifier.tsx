@@ -20,10 +20,26 @@ export function LegacyAdminVerifier() {
 
     let isCurrent = true;
     async function redeemLegacyVerifier() {
-      const result = await authClient.getSession();
-      if (isCurrent && !result.error && result.data?.user) {
-        router.replace("/admin");
+      try {
+        const result = await authClient.getSession();
+        if (!isCurrent) return;
+        if (result.error || !result.data?.user) {
+          router.replace("/connexion?reason=callback");
+          return;
+        }
+
+        const destinationResult = await fetch("/api/auth/destination", { cache: "no-store" });
+        const destinationData = await destinationResult.json() as { destination?: "/admin" | "/compte" };
+        if (!isCurrent) return;
+        if (!destinationResult.ok || !destinationData.destination) {
+          router.replace("/connexion?reason=callback");
+          return;
+        }
+
+        router.replace(destinationData.destination);
         router.refresh();
+      } catch {
+        if (isCurrent) router.replace("/connexion?reason=callback");
       }
     }
 

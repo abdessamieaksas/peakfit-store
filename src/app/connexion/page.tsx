@@ -22,6 +22,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <h1 className="display-title mt-3 text-6xl">Connexion</h1>
     <p className="mt-4 text-sm leading-relaxed text-muted">Connecte-toi ou crée un compte. Les clients accèdent à leurs commandes ; les membres Peakfit autorisés sont dirigés vers leur espace de travail.</p>
     {reason === "forbidden" ? <p className="mt-4 border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">Ce compte n’a pas de rôle équipe actif. Tu peux toujours utiliser ton compte client, ou demander à un propriétaire Peakfit un accès équipe.</p> : null}
+    {reason === "callback" ? <p className="mt-4 border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">Google a bien répondu, mais Peakfit n’a pas pu terminer la connexion. Réessaie ici ; si le problème persiste, vérifie que tu utilises l’adresse autorisée pour l’équipe.</p> : null}
     <CustomerSignIn />
   </div></section>;
 }
