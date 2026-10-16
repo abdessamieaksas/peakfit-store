@@ -135,6 +135,13 @@
 - Product metadata and stock management are restricted to OWNER and MANAGER. Fulfilment staff may manage orders but cannot edit the catalog; VIEWER is read-only. API routes enforce this independently of navigation visibility.
 - Sensitive values are masked/truncated, copied through a named control, and never repeated in a toast or telemetry.
 
+## Public demo isolation
+
+- The public sales demo is a separate simulation at `/demo/connexion` and `/demo/admin`; it is not an alternate Peakfit staff login.
+- Demo authentication uses its own environment-backed credential and signed, `HttpOnly` session cookie scoped to `/demo`. It must never use Neon Auth, `ADMIN_EMAILS`, production admin APIs, or database repositories.
+- Demo products, customer names/phones, order references, statuses, stock, and metrics are fictional constants. Status changes are tab-local only and visibly labeled as simulated; they never persist or trigger notifications, inventory changes, or WhatsApp messages.
+- Keep the demo visibly identified as fictitious throughout the dashboard. Any future feature added to the demo must remain disconnected from real customer data and production mutations.
+
 ## Admin overview
 
 - “Nouvelles aujourd’hui” counts orders created since midnight in `Africa/Casablanca`.

@@ -41,6 +41,9 @@ Thumbs.db
 
 # Product Design and local QA artifacts
 design-qa.local.md
+prospects.csv
+outreach-drafts.md
+demo-setup.md
 
 # Vercel project metadata and local environment files
 .vercel
